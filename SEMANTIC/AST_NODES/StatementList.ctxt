@@ -1,0 +1,11 @@
+#BlueJ class context
+comment0.target=StatementList
+comment1.params=statements
+comment1.target=StatementList(java.util.List)
+comment2.params=
+comment2.target=java.util.List\ getStatements()
+comment3.params=statements
+comment3.target=void\ setStatements(java.util.List)
+comment4.params=db
+comment4.target=void\ evaluate(STRUCTURE.Catalog)
+numComments=5

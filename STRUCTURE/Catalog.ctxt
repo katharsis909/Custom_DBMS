@@ -1,0 +1,12 @@
+#BlueJ class context
+comment0.target=Catalog
+comment1.params=
+comment1.target=Catalog()
+comment2.params=table
+comment2.target=void\ addTable(Table)
+comment3.params=name
+comment3.target=Table\ getTable(java.lang.String)
+comment4.params=name
+comment4.target=void\ dropTable(java.lang.String)
+comment4.text=\n\ \ \ \ public\ boolean\ tableExists(String\ name)\ {\n\ \ \ \ \ \ \ \ return\ tables.containsKey(name);\n\ \ \ \ }\n\n\ \ \ \ public\ void\ listTables()\ {\n\ \ \ \ \ \ \ \ System.out.println("Tables\:");\n\ \ \ \ \ \ \ \ if\ (tables.isEmpty())\ {\n\ \ \ \ \ \ \ \ \ \ \ \ System.out.println("\ -\ No\ tables\ found.");\n\ \ \ \ \ \ \ \ }\ else\ {\n\ \ \ \ \ \ \ \ \ \ \ \ for\ (String\ tableName\ \:\ tables.keySet())\ {\n\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ System.out.println("\ -\ "\ +\ tableName);\n\ \ \ \ \ \ \ \ \ \ \ \ }\n\ \ \ \ \ \ \ \ }\n\ \ \ \ }\n
+numComments=5

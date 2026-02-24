@@ -1,0 +1,5 @@
+#BlueJ class context
+comment0.target=DropTableStatementParser
+comment1.params=ctx
+comment1.target=SEMANTIC.AST_NODES.DropTableStatement\ parse(util.ParserContext)
+numComments=2
