@@ -1,3 +1,13 @@
+# Custom-DBMS
+Custom DBMS compiler&amp;engine from scratch.
+
+
+
+
+
+
+
+
 //d - doubt
 //l - for later
 //c - Changes
