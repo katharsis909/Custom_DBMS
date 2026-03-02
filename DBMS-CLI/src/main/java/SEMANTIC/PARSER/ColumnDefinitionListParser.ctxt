@@ -1,0 +1,5 @@
+#BlueJ class context
+comment0.target=ColumnDefinitionListParser
+comment1.params=ctx
+comment1.target=SEMANTIC.AST_NODES.ColumnDefinitionList\ parse(util.ParserContext)
+numComments=2

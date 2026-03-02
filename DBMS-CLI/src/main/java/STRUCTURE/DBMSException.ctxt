@@ -1,0 +1,11 @@
+#BlueJ class context
+comment0.target=DBMSException
+comment1.params=
+comment1.target=DBMSException()
+comment2.params=message
+comment2.target=DBMSException(java.lang.String)
+comment3.params=message\ cause
+comment3.target=DBMSException(java.lang.String,\ java.lang.Throwable)
+comment4.params=cause
+comment4.target=DBMSException(java.lang.Throwable)
+numComments=5

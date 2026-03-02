@@ -1,0 +1,9 @@
+#BlueJ class context
+comment0.target=Value
+comment1.params=
+comment1.target=LEAF_NODES.Literal\ getLiteral()
+comment2.params=literal
+comment2.target=void\ setLiteral(LEAF_NODES.Literal)
+comment3.params=
+comment3.target=STRUCTURE.DBMSDataType\ evaluate()
+numComments=4

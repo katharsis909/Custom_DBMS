@@ -1,0 +1,19 @@
+#BlueJ class context
+comment0.target=SelectStatement
+comment1.params=
+comment1.target=SelectedColumnList\ getSelectedColumnList()
+comment2.params=selectedColumnList
+comment2.target=void\ setSelectedColumnList(SelectedColumnList)
+comment3.params=
+comment3.target=LEAF_NODES.Identifier\ getTableName()
+comment4.params=tableName
+comment4.target=void\ setTableName(LEAF_NODES.Identifier)
+comment5.params=
+comment5.target=WhereClause\ getWhereClause()
+comment6.params=whereClause
+comment6.target=void\ setWhereClause(WhereClause)
+comment7.params=db
+comment7.target=void\ evaluate(STRUCTURE.Catalog)
+comment8.params=rows\ selectedColumnList
+comment8.target=void\ printResult(java.util.List,\ SelectedColumnList)
+numComments=9

@@ -1,2 +1,19 @@
-# Project exclude paths
-/out/
+# OS files
+.DS_Store
+
+# IDE metadata
+.idea/
+*.iml
+
+# Build outputs
+target/
+out/
+*/target/
+*/out/
+
+# Java compiled artifacts
+*.class
+
+# BlueJ artifacts
+*.ctxt
+package.bluej
