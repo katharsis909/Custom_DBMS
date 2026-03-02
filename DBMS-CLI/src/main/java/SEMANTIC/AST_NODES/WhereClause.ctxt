@@ -1,9 +1,0 @@
-#BlueJ class context
-comment0.target=WhereClause
-comment1.params=
-comment1.target=ConditionList\ getConditions()
-comment2.params=conditions
-comment2.target=void\ setConditions(ConditionList)
-comment3.params=
-comment3.target=boolean\ evaluate()
-numComments=4

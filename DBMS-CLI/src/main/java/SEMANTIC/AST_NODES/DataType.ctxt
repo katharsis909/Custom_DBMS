@@ -1,7 +1,0 @@
-#BlueJ class context
-comment0.target=DataType
-comment1.params=
-comment1.target=java.lang.String\ getDataType()
-comment2.params=dataType
-comment2.target=void\ setDataType(java.lang.String)
-numComments=3

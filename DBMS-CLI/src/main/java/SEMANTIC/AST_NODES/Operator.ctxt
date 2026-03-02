@@ -1,9 +1,0 @@
-#BlueJ class context
-comment0.target=Operator
-comment1.params=
-comment1.target=java.lang.String\ getSymbol()
-comment2.params=symbol
-comment2.target=void\ setSymbol(java.lang.String)
-comment3.params=left\ right
-comment3.target=boolean\ evaluate(STRUCTURE.DBMSDataType,\ STRUCTURE.DBMSDataType)
-numComments=4
