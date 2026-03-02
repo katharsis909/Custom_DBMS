@@ -1,0 +1,290 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww12720\viewh7800\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Project Outline (Detailed)\
+\
+This project is an educational, in-memory MiniSQL DBMS interpreter in Java.\
+It parses a subset of SQL, builds AST nodes, and evaluates them against an in-process catalog.\
+\
+1. Purpose and Scope\
+Primary purpose: implement a minimal DBMS pipeline end-to-end (lexing, parsing, semantic evaluation, and table operations).\
+It is designed for learning/compiler-style architecture rather than production storage/query optimization.\
+Evidence:\
+CLI prompt and workflow in Main.java\
+Grammar comments in GRAMMAR_PRODUCTIONS.java\
+In-memory data structures in Catalog.java and Table.java\
+2. High-Level Architecture\
+LEXICAL/: tokenizer (Lexer) that emits Tokens from raw SQL input.\
+SEMANTIC/PARSER/: recursive-descent parser (LL(1)-style) producing AST objects.\
+SEMANTIC/AST_NODES/: statement and expression nodes with evaluate(...) logic.\
+STRUCTURE/: runtime DB objects (Catalog, Table, Record, type wrappers).\
+Converter/: conversion utility from AST schema nodes to runtime schema objects.\
+BlueJ-centric project layout (package.bluej, .ctxt, many checked-in .class files).\
+3. Runtime Flow (Request Lifecycle)\
+Input is read from console in Main.java.\
+Lexer scans text to tokens in Lexer.java.\
+ParserContext manages current token and advancing in ParserContext.java.\
+StatementListParser parses one or more statements ending with ; in StatementListParser.java.\
+AST is evaluated (stmtlist.evaluate(db)), mutating/querying in-memory Catalog.\
+4. Supported SQL Features\
+CREATE TABLE table_name (col_name INT|STRING, ...)\
+DROP TABLE table_name\
+INSERT INTO table_name (value1, value2, ...)\
+SELECT *|col1,col2 FROM table_name [WHERE col = literal [AND col = literal ...]]\
+Keywords handled case-insensitively in lexer keyword map.\
+WHERE supports only equality (=) and AND.\
+Grammar is documented in GRAMMAR_PRODUCTIONS.java.\
+5. Core Data Model\
+Catalog stores tables in Map<String, Table> (uppercased keys) for case-insensitive lookup.\
+Table stores:\
+schema: List<Column>\
+data: List<Record>\
+Record stores HashMap<String, DBMSDataType> column-value pairs.\
+Type system:\
+interface DBMSDataType.java\
+implementations MyInt.java, MyString.java\
+6. AST and Evaluation Strategy\
+Abstract base Statement.java with evaluate(Catalog).\
+Concrete statements:\
+CreateTableStatement.java\
+InsertIntoStatement.java\
+SelectStatement.java\
+DropTableStatement.java\
+Evaluation model is direct and imperative:\
+no query planner\
+no optimization layer\
+direct traversal/filter/projection.\
+7. Parser Design\
+Recursive-descent parser split by nonterminal:\
+statement parsers, condition parsers, literal/identifier parsers.\
+ParserContext.expect(...) centralizes token expectation + error.\
+Good separation between token stream handling and node creation.\
+8. Coding Style and Engineering Patterns\
+Strongly educational style:\
+many explanatory comments\
+clear one-class-per-concept decomposition\
+explicit getters/setters everywhere\
+Naming is mostly descriptive, but mixed conventions:\
+table_name, column_type alongside camelCase\
+package names uppercase (LEXICAL, SEMANTIC, STRUCTURE) which is unusual in Java style.\
+Architecture is modular by concern, not layered with interfaces everywhere.\
+Extensive BlueJ artifacts suggest classroom/project workflow.\
+9. Error Handling\
+Distinct exception classes:\
+lexical: LexerException.java\
+parse: ParseException.java\
+runtime DB: DBMSException.java\
+Main loop catches and prints user-facing errors.\
+Type mismatch and schema mismatch checks are present in insert path.\
+10. What Is Strong\
+Clean educational decomposition of compiler pipeline.\
+AST-driven execution is easy to extend.\
+Type abstraction (DBMSDataType) is a good base for adding new types.\
+SELECT flow has clear filtering + projection separation.\
+11. Current Limitations / Gaps\
+No persistence; everything is in memory and lost on exit.\
+No UPDATE/DELETE/ALTER/JOIN/OR/comparison operators beyond =.\
+No indexes or performance optimizations.\
+No formal test suite framework (only simple lexer test main).\
+Repo contains compiled artifacts (.class) and IDE metadata.\
+I observed a runtime stdin issue in this execution environment when trying non-interactive piping, so CLI robustness around EOF may need hardening in Main.java.\
+12. Project Composition Snapshot\
+Java source files: 59\
+Checked-in .class files: 66\
+BlueJ .ctxt files: 57\
+UML assets present in /Users/megha_shah/Documents/Ren_Proj/DBMS/UML Images\
+13. Architecture Summary in One Line\
+Interpreter architecture: SQL text -> Lexer -> Recursive-descent Parser -> AST -> Evaluate on in-memory Catalog/Table/Record model. \
+\
+\
+Perfect, here are the exact structures you asked for.\
+\
+1. **Exact package/folder structure (source-focused)**\
+\
+```text\
+/Users/megha_shah/Documents/Ren_Proj/DBMS\
+\uc0\u9500 \u9472  Main.java\
+\uc0\u9500 \u9472  TokenSaver.java\
+\uc0\u9500 \u9472  README.TXT\
+\uc0\u9500 \u9472  Converter/\
+\uc0\u9474   \u9492 \u9472  Main.java\
+\uc0\u9500 \u9472  LEXICAL/\
+\uc0\u9474   \u9500 \u9472  Lexer.java\
+\uc0\u9474   \u9500 \u9472  LexerException.java\
+\uc0\u9474   \u9500 \u9472  LexerTest.java\
+\uc0\u9474   \u9500 \u9472  Token.java\
+\uc0\u9474   \u9492 \u9472  TokenType.java\
+\uc0\u9500 \u9472  SEMANTIC/\
+\uc0\u9474   \u9500 \u9472  GRAMMAR_PRODUCTIONS.java\
+\uc0\u9474   \u9500 \u9472  AST_NODES/\
+\uc0\u9474   \u9474   \u9500 \u9472  Statement.java\
+\uc0\u9474   \u9474   \u9500 \u9472  StatementList.java\
+\uc0\u9474   \u9474   \u9500 \u9472  CreateTableStatement.java\
+\uc0\u9474   \u9474   \u9500 \u9472  DropTableStatement.java\
+\uc0\u9474   \u9474   \u9500 \u9472  InsertIntoStatement.java\
+\uc0\u9474   \u9474   \u9500 \u9472  SelectStatement.java\
+\uc0\u9474   \u9474   \u9500 \u9472  WhereClause.java\
+\uc0\u9474   \u9474   \u9500 \u9472  ConditionList.java\
+\uc0\u9474   \u9474   \u9500 \u9472  UnaryCondition.java\
+\uc0\u9474   \u9474   \u9500 \u9472  Operator.java\
+\uc0\u9474   \u9474   \u9500 \u9472  SelectedColumnList.java\
+\uc0\u9474   \u9474   \u9500 \u9472  ColumnMention.java\
+\uc0\u9474   \u9474   \u9500 \u9472  ColumnDefinition.java\
+\uc0\u9474   \u9474   \u9500 \u9472  ColumnDefinitionList.java\
+\uc0\u9474   \u9474   \u9500 \u9472  DataType.java\
+\uc0\u9474   \u9474   \u9500 \u9472  Value.java\
+\uc0\u9474   \u9474   \u9500 \u9472  ValueList.java\
+\uc0\u9474   \u9474   \u9492 \u9472  LEAF_NODES/\
+\uc0\u9474   \u9474      \u9500 \u9472  Identifier.java\
+\uc0\u9474   \u9474      \u9500 \u9472  Literal.java\
+\uc0\u9474   \u9474      \u9500 \u9472  NumericLiteral.java\
+\uc0\u9474   \u9474      \u9492 \u9472  StringLiteral.java\
+\uc0\u9474   \u9492 \u9472  PARSER/\
+\uc0\u9474      \u9500 \u9472  StatementParser.java\
+\uc0\u9474      \u9500 \u9472  StatementListParser.java\
+\uc0\u9474      \u9500 \u9472  CreateTableStatementParser.java\
+\uc0\u9474      \u9500 \u9472  DropTableStatementParser.java\
+\uc0\u9474      \u9500 \u9472  InsertIntoStatementParser.java\
+\uc0\u9474      \u9500 \u9472  SelectStatementParser.java\
+\uc0\u9474      \u9500 \u9472  WhereClauseParser.java\
+\uc0\u9474      \u9500 \u9472  ConditionListParser.java\
+\uc0\u9474      \u9500 \u9472  UnaryConditionParser.java\
+\uc0\u9474      \u9500 \u9472  OperatorParser.java\
+\uc0\u9474      \u9500 \u9472  ValueParser.java\
+\uc0\u9474      \u9500 \u9472  ValueListParser.java\
+\uc0\u9474      \u9500 \u9472  ColumnDefinitionParser.java\
+\uc0\u9474      \u9500 \u9472  ColumnDefinitionListParser.java\
+\uc0\u9474      \u9500 \u9472  ColumnMentionParser.java\
+\uc0\u9474      \u9500 \u9472  SelectedColumnListParser.java\
+\uc0\u9474      \u9500 \u9472  DataTypeParser.java\
+\uc0\u9474      \u9500 \u9472  util/\
+\uc0\u9474      \u9474   \u9492 \u9472  ParserContext.java\
+\uc0\u9474      \u9500 \u9472  LEAF/\
+\uc0\u9474      \u9474   \u9500 \u9472  IdentifierParser.java\
+\uc0\u9474      \u9474   \u9492 \u9472  LiteralParser.java\
+\uc0\u9474      \u9492 \u9472  Exception/\
+\uc0\u9474         \u9492 \u9472  ParseException.java\
+\uc0\u9492 \u9472  STRUCTURE/\
+   \uc0\u9500 \u9472  Catalog.java\
+   \uc0\u9500 \u9472  Table.java\
+   \uc0\u9500 \u9472  Record.java\
+   \uc0\u9500 \u9472  Column.java\
+   \uc0\u9500 \u9472  DBMSDataType.java\
+   \uc0\u9500 \u9472  DBMSException.java\
+   \uc0\u9500 \u9472  MyInt.java\
+   \uc0\u9492 \u9472  MyString.java\
+```\
+\
+2. **Token types** ([TokenType.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/LEXICAL/TokenType.java))\
+\
+```java\
+CREATE, DROP, SELECT, WHERE, INSERT,\
+INT, STRING,\
+TABLE, FROM, INTO,\
+COMMA, STAR, LPAREN, RPAREN, EQUAL, SEMICOLON, AND,\
+IDENTIFIER, STRING_LITERAL, NUMERIC_LITERAL,\
+EOF, INVALID\
+```\
+\
+Answers:\
+- `=` token exists: `EQUAL`\
+- `AND` exists as token and keyword\
+- `INT` and `STRING` exist as keyword tokens\
+\
+3. **`SelectStatement` structure** ([SelectStatement.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/SelectStatement.java))\
+- `private SelectedColumnList selectedColumnList;`\
+- `private Identifier tableName;`\
+- `private WhereClause whereClause;` (nullable)\
+\
+4. **Condition representation / AND implementation**\
+- `WhereClause` holds one `ConditionList` ([WhereClause.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/WhereClause.java))\
+- `ConditionList` holds `List<UnaryCondition>` ([ConditionList.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/ConditionList.java))\
+- `UnaryCondition` = `Identifier columnName + Operator operator + Literal value` ([UnaryCondition.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/UnaryCondition.java))\
+- `AND` is implemented by looping all unary conditions and short-circuiting on first false (`for ... if !evaluate => false`).\
+\
+5. **Table schema / `Column.java`** ([Column.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/STRUCTURE/Column.java))\
+```java\
+class Column \{\
+    String columnName;\
+    String column_type; // "INT" or "STRING"\
+\}\
+```\
+Constructor: `Column(String column_name, String column_type)`\
+\
+6. **`DBMSDataType` interface** ([DBMSDataType.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/STRUCTURE/DBMSDataType.java))\
+```java\
+String toString();\
+boolean equals(DBMSDataType other);\
+boolean typeEquals(DBMSDataType other);\
+boolean typeEquals(String columnType);\
+String getType();\
+```\
+So:\
+- no `getValue()` in interface\
+- no `compareTo()` currently\
+- equality/type checks are custom methods\
+\
+7. **How SELECT filtering works** ([SelectStatement.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/SelectStatement.java))\
+Yes, it works exactly in that pattern:\
+\
+```text\
+allRecords = table.getRecordList()\
+filtered = []\
+for each record:\
+  if whereClause == null OR whereClause.evaluate(record):\
+    filtered.add(record)\
+\
+for each filtered record:\
+  projectedRow = selectedColumnList.evaluate(record, table)\
+  result.add(projectedRow)\
+printResult(result)\
+```\
+\
+\
+1. **`Record` storage details** ([Record.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/STRUCTURE/Record.java))\
+- Field is exactly:\
+  - `private HashMap<String, DBMSDataType> data;`\
+- Yes, it provides:\
+  - `public DBMSDataType getValue(String columnName) throws DBMSException`\
+- Case behavior:\
+  - `Record` itself does **no** case normalization.\
+  - Keys are stored exactly as passed to `setValue(...)`.\
+  - In practice, identifiers are lowercased by parser (`IdentifierParser`), so column names in records are effectively lowercase.\
+  - So lookup is case-sensitive at `Record` level, but pipeline keeps it consistent.\
+\
+2. **`UnaryCondition.evaluate()` logic** ([UnaryCondition.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/UnaryCondition.java))\
+- It is:\
+  - `actualValue = record.getValue(columnName)`\
+  - `expectedValue = literal.evaluate()`\
+  - `return operator.evaluate(actualValue, expectedValue)`\
+- So comparison is done through `Operator`, not hardcoded directly in `UnaryCondition`.\
+\
+3. **Current `Operator` support** ([Operator.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/Operator.java), [OperatorParser.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/PARSER/OperatorParser.java))\
+- Parser currently accepts only `=` token (`TokenType.EQUAL`).\
+- `Operator` stores a `symbol` string, but `evaluate(...)` currently does `left.equals(right)` (effectively equality only).\
+- So yes: currently only equality, and structure is ready to extend.\
+\
+4. **`SelectedColumnList.evaluate()` return type** ([SelectedColumnList.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/SelectedColumnList.java))\
+- Returns: `List<DBMSDataType>`\
+- Not strings, not map.\
+\
+5. **`INSERT` type checking strictness** ([InsertIntoStatement.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/InsertIntoStatement.java), [ValueList.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/ValueList.java), [Value.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/SEMANTIC/AST_NODES/Value.java), [Table.java](/Users/megha_shah/Documents/Ren_Proj/DBMS/STRUCTURE/Table.java))\
+- Strict checks exist at multiple levels:\
+  - Value count must match column count.\
+  - Each value is checked against target column type in `Value.evaluate(column)`.\
+  - `Table.addRecord(...)` checks count again and checks each runtime type again (`value.typeEquals(expectedType)`).\
+- So enforcement is strict and redundant (in a good safety sense).\
+\
+Your architectural observation is correct: `WhereClause -> ConditionList -> UnaryCondition -> Operator` is a good extension seam for `!=, <, >, <=, >=`. \
+\
+Yes.\
+MyInt.java: private final int value;\
+MyString.java: private final String value;\
+Yes.\
+Literal.java defines public abstract DBMSDataType evaluate();\
+NumericLiteral.java returns MyInt\
+StringLiteral.java returns MyString}

@@ -1,0 +1,5 @@
+#BlueJ class context
+comment0.target=WhereClauseParser
+comment1.params=ctx
+comment1.target=SEMANTIC.AST_NODES.WhereClause\ parse(util.ParserContext)
+numComments=2

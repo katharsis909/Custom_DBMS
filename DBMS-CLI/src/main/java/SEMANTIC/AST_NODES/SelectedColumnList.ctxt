@@ -1,0 +1,13 @@
+#BlueJ class context
+comment0.target=SelectedColumnList
+comment1.params=
+comment1.target=java.util.List\ getColumns()
+comment2.params=columns
+comment2.target=void\ setColumns(java.util.List)
+comment3.params=
+comment3.target=boolean\ isSelectAll()
+comment4.params=selectAll
+comment4.target=void\ setSelectAll(boolean)
+comment5.params=
+comment5.target=java.util.List\ evaluate()
+numComments=6

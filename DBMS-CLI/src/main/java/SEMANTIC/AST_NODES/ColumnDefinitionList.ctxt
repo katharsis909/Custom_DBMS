@@ -1,0 +1,11 @@
+#BlueJ class context
+comment0.target=ColumnDefinitionList
+comment1.params=columnList
+comment1.target=ColumnDefinitionList(java.util.List)
+comment2.params=
+comment2.target=java.util.List\ getColumnList()
+comment3.params=columnList
+comment3.target=void\ setColumnList(java.util.List)
+comment4.params=
+comment4.target=ColumnDefinitionList\ evaluate()
+numComments=5

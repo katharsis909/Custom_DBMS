@@ -1,0 +1,5 @@
+#BlueJ class context
+comment0.target=IdentifierParser
+comment1.params=ctx
+comment1.target=SEMANTIC.AST_NODES.LEAF_NODES.Identifier\ parse(SEMANTIC.PARSER.util.ParserContext)
+numComments=2

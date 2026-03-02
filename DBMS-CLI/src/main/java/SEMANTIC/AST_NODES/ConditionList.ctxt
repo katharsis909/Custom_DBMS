@@ -1,0 +1,12 @@
+#BlueJ class context
+comment0.target=ConditionList
+comment1.params=conditions
+comment1.target=ConditionList(java.util.List)
+comment2.params=
+comment2.target=java.util.List\ getConditions()
+comment3.params=conditions
+comment3.target=void\ setConditions(java.util.List)
+comment4.params=
+comment4.target=boolean\ evaluate()
+comment4.text=\n\ \ \ \ \ \ \ \ evaluate\ shall\ need\ a\ Record/row\n\ \ \ \ \ \ \ \ evaluate\ should\ return\ boolean\ for\ all\n
+numComments=5

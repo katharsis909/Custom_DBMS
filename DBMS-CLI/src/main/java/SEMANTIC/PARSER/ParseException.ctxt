@@ -1,0 +1,7 @@
+#BlueJ class context
+comment0.target=ParseException
+comment1.params=message
+comment1.target=ParseException(java.lang.String)
+comment2.params=message\ cause
+comment2.target=ParseException(java.lang.String,\ java.lang.Throwable)
+numComments=3
