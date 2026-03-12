@@ -8,48 +8,28 @@ The original parser/evaluator pipeline is reused as-is:
 
 ## What Was Added
 
-### 1. Multi-module project layout
-A parent Maven project now contains two modules:
+The repository now uses two Maven modules:
 - `DBMS-CLI` (engine module)
 - `dbms-spring-boot` (web/API module)
 
-### 2. Engine facade for reuse
-File: `DBMS-CLI/src/main/java/dbmscli/DbmsCliEngine.java`
-
-Responsibilities:
+Core DBMS integration pieces:
+- `DBMS-CLI/src/main/java/dbmscli/DbmsCliEngine.java`
 - `execute(String sql)`
-  - Parses and evaluates SQL using existing compiler-style pipeline.
-  - Returns the rendered text form of the structured execution result.
+  - parses and evaluates SQL using the existing compiler-style pipeline
+  - returns the rendered text form of the structured execution result
 - `executeStructured(String sql)`
-  - Returns structured result blocks for the web layer.
-  - Table results are exposed as columns plus row values instead of raw printed text.
+  - returns structured result blocks for the web layer
+  - exposes table results as columns plus row values instead of raw printed text
 - `reset()`
-  - Reinitializes in-memory `Catalog`.
-
-### 3. Spring Boot API layer
-Files:
-- `dbms-spring-boot/src/main/java/com/example/dbmsspringboot/controller/SqlController.java`
+  - reinitializes the in-memory `Catalog`
+- `DBMS-CLI/src/main/java/dbmscli/SourceDocument.java`
+  - maps flat source positions to line and column
+- `DBMS-CLI/src/main/java/dbmscli/SqlErrorFormatter.java`
+  - formats parse and runtime errors consistently for both CLI and Spring Boot
 - `dbms-spring-boot/src/main/java/com/example/dbmsspringboot/service/SqlExecutionService.java`
-- `dbms-spring-boot/src/main/java/com/example/dbmsspringboot/config/EngineConfig.java`
-- DTOs under `dbms-spring-boot/src/main/java/com/example/dbmsspringboot/dto/`
-
-Responsibilities:
-- Controller exposes API endpoints.
-- Service validates SQL input and delegates to `DbmsCliEngine`.
-- Service maps structured DBMS result blocks into API DTOs.
-- Config declares `DbmsCliEngine` as a Spring bean.
-
-### 4. Browser workbench frontend
-Files:
-- `dbms-spring-boot/src/main/resources/static/index.html`
-- `dbms-spring-boot/src/main/resources/static/styles.css`
-- `dbms-spring-boot/src/main/resources/static/app.js`
-
-Responsibilities:
-- Presents SQL input in an editor-style textarea.
-- Calls the existing Spring Boot API endpoints.
-- Renders errors in red.
-- Renders table result blocks as HTML tables.
+  - validates input, delegates to the engine, and maps structured result blocks into API DTOs
+- `dbms-spring-boot/src/main/resources/static/`
+  - serves the browser workbench frontend with editor-style input, red error rendering, and HTML tables for `SELECT`
 
 ## API Endpoints
 
@@ -84,7 +64,7 @@ Error response example:
 {
   "success": false,
   "output": null,
-  "error": "Table 'STUDENTS' already exists.",
+  "error": "Error at line 1, column 35 (position 34): Inserted value - 78 with data type STRING, which does not matches the data type INT of column - marks",
   "results": null
 }
 ```
@@ -107,11 +87,12 @@ Response example:
 - If incoming SQL does not end with `;`, service appends one.
 - Multiple SQL statements in one request are supported if semicolon-terminated.
 - Catalog is in-memory and process-local.
-- All API errors are returned as structured JSON via `SqlResponse`.
-- The API now returns `results` blocks for successful execution.
-- `SELECT` table output is exposed in both forms:
-  - `output`: legacy text rendering
-  - `results`: structured columns and rows for the frontend
+- All API errors are returned through `SqlResponse`.
+- Successful execution returns `results` blocks for structured rendering.
+- `SELECT` output is exposed in both forms:
+  - `output` as rendered text
+  - `results` as structured columns and rows
+- Error messages are formatted through the shared DBMS-side formatter, so CLI and browser errors use the same line-aware text.
 
 ## Supported Statements (Current)
 - `CREATE TABLE`
