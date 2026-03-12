@@ -3,6 +3,7 @@ package SEMANTIC.AST_NODES;
 import SEMANTIC.AST_NODES.LEAF_NODES.Identifier;
 import STRUCTURE.Catalog;
 import STRUCTURE.DBMSException;
+import dbmscli.result.QueryResultBlock;
 
 public class DropTableStatement extends Statement
 {
@@ -16,10 +17,10 @@ public class DropTableStatement extends Statement
         this.tableName = tableName;
     }
 
-    public void evaluate(Catalog catalog) throws DBMSException {
+    public QueryResultBlock execute(Catalog catalog) throws DBMSException {
         String name = tableName.getName();
         //no ambiguities!
         catalog.dropTable(name);
+        return null;
     }
 }
-

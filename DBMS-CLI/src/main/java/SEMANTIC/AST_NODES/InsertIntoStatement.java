@@ -5,6 +5,7 @@ import STRUCTURE.Catalog;
 import STRUCTURE.DBMSDataType;
 import STRUCTURE.DBMSException;
 import STRUCTURE.Table;
+import dbmscli.result.QueryResultBlock;
 
 import java.util.List;
 
@@ -29,7 +30,7 @@ public class InsertIntoStatement extends Statement {
         this.valueList = valueList;
     }
 
-    public void evaluate(Catalog catalog) throws DBMSException {
+    public QueryResultBlock execute(Catalog catalog) throws DBMSException {
         Table table = catalog.getTable(getTableName().getName());
         if (table == null) {
             throw new DBMSException("Table not found: " + getTableName().getName());
@@ -37,5 +38,6 @@ public class InsertIntoStatement extends Statement {
 
         List<DBMSDataType> values = valueList.evaluate(table.getColumnList());
         table.addRecord(values);
+        return null;
     }
 }

@@ -5,6 +5,7 @@ import SEMANTIC.AST_NODES.LEAF_NODES.Identifier;
 import STRUCTURE.Catalog;
 import STRUCTURE.DBMSException;
 import STRUCTURE.Table;
+import dbmscli.result.QueryResultBlock;
 
 public class CreateTableStatement extends Statement {
     private Identifier tableName;
@@ -26,9 +27,9 @@ public class CreateTableStatement extends Statement {
         this.columns = columns;
     }
 
-    public void evaluate(Catalog db) throws DBMSException {
+    public QueryResultBlock execute(Catalog db) throws DBMSException {
         Table table = Main.toTable(this);
         db.addTable(table);
-
+        return null;
     }
 }

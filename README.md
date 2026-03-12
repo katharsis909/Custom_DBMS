@@ -36,8 +36,24 @@ Base path: `/api/sql`
 }
 ```
 
+Successful responses now include:
+- `output`
+  - legacy text rendering of the result
+- `results`
+  - structured result blocks for the browser UI
+  - table blocks contain `columns` and `rows`
+
 ### Reset In-Memory Catalog
 - `POST /api/sql/reset`
+
+## Browser Workbench
+
+The Spring Boot app now serves a static frontend at `/` with:
+- an editor-style SQL input area
+- red error rendering
+- HTML table rendering for `SELECT` results
+
+Pagination is intentionally deferred for later implementation.
 
 ## Build and Run
 
@@ -60,4 +76,5 @@ This is the BlueJ project root for the DBMS source package layout.
 ## Notes
 
 - Data is in-memory and resets on application restart.
+- The backend now returns structured result blocks for table output instead of relying on frontend parsing of printed text.
 - This project currently favors educational clarity over production DB features.

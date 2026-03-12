@@ -6,6 +6,7 @@ import STRUCTURE.DBMSDataType;
 import STRUCTURE.DBMSException;
 import STRUCTURE.Table;
 import STRUCTURE.Record;
+import dbmscli.result.QueryResultBlock;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,7 @@ public class SelectStatement extends Statement {
         this.whereClause = whereClause;
     }
 
-    public void evaluate(Catalog db) throws DBMSException {
+    public QueryResultBlock execute(Catalog db) throws DBMSException {
         Table table = db.getTable(getTableName().getName());
         //FROM is executed before
         List<Record> allRecords = table.getRecordList();
@@ -55,43 +56,35 @@ public class SelectStatement extends Statement {
             }
         }
 
-        List<List<DBMSDataType>> result = new ArrayList<>();
-//      Better make List<DBMSDataType> another object
+        List<List<String>> rows = new ArrayList<>();
         for (Record r : filtered) {
             //Second, from the validated records, now select specific columns
             //No need to pass information of which columns to select, all info in the below nodes
             //Crazy design pattern!
-            result.add(selectedColumnList.evaluate(r,table));
+            List<DBMSDataType> selectedValues = selectedColumnList.evaluate(r,table);
+            List<String> row = new ArrayList<>();
+            for (DBMSDataType value : selectedValues) {
+                row.add(value.toString());
+            }
+            rows.add(row);
         }
-        //System.out.println();
-
-        printResult(result, getSelectedColumnList(), table);
-
-        //return result;
+        List<String> headers = buildHeaders(selectedColumnList, table);
+        return QueryResultBlock.table(headers, rows);
     }
 
-    private void printResult(List<List<DBMSDataType>> rows, SelectedColumnList selectedColumnList, Table table) {
-        System.out.print("Columns: ");
-        if(selectedColumnList.getColumns() == null)
-        {
-            table.printColumns();
-        }
-        else {
-            for (int i = 0; i < selectedColumnList.getColumns().size(); i++) {
-                System.out.print(selectedColumnList.getColumns().get(i).getColumnName().getName());
-                if (i < selectedColumnList.getColumns().size() - 1) System.out.print(", ");
+    private List<String> buildHeaders(SelectedColumnList selectedColumnList, Table table) {
+        List<String> headers = new ArrayList<>();
+        if (selectedColumnList.getColumns() == null) {
+            for (int i = 0; i < table.getColumnList().size(); i++) {
+                headers.add(table.getColumnList().get(i).getColumnName());
             }
-            System.out.println();
+            return headers;
         }
 
-        for (List<DBMSDataType> row : rows) {
-            System.out.print("Record: ");
-            for (int i = 0; i < row.size(); i++) {
-                System.out.print(row.get(i));
-                if (i < row.size() - 1) System.out.print(", ");
-            }
-            System.out.println();
+        for (int i = 0; i < selectedColumnList.getColumns().size(); i++) {
+            headers.add(selectedColumnList.getColumns().get(i).getColumnName().getName());
         }
+        return headers;
     }
 
 }

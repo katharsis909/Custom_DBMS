@@ -19,7 +19,10 @@ File: `DBMS-CLI/src/main/java/dbmscli/DbmsCliEngine.java`
 Responsibilities:
 - `execute(String sql)`
   - Parses and evaluates SQL using existing compiler-style pipeline.
-  - Captures printed output from statement evaluation and returns it as a string.
+  - Returns the rendered text form of the structured execution result.
+- `executeStructured(String sql)`
+  - Returns structured result blocks for the web layer.
+  - Table results are exposed as columns plus row values instead of raw printed text.
 - `reset()`
   - Reinitializes in-memory `Catalog`.
 
@@ -33,7 +36,20 @@ Files:
 Responsibilities:
 - Controller exposes API endpoints.
 - Service validates SQL input and delegates to `DbmsCliEngine`.
+- Service maps structured DBMS result blocks into API DTOs.
 - Config declares `DbmsCliEngine` as a Spring bean.
+
+### 4. Browser workbench frontend
+Files:
+- `dbms-spring-boot/src/main/resources/static/index.html`
+- `dbms-spring-boot/src/main/resources/static/styles.css`
+- `dbms-spring-boot/src/main/resources/static/app.js`
+
+Responsibilities:
+- Presents SQL input in an editor-style textarea.
+- Calls the existing Spring Boot API endpoints.
+- Renders errors in red.
+- Renders table result blocks as HTML tables.
 
 ## API Endpoints
 
@@ -51,8 +67,15 @@ Success response example:
 ```json
 {
   "success": true,
-  "output": "OK",
-  "error": null
+  "output": "| id | name |\n| 1  | Ava  |",
+  "error": null,
+  "results": [
+    {
+      "message": null,
+      "columns": ["id", "name"],
+      "rows": [["1", "Ava"]]
+    }
+  ]
 }
 ```
 
@@ -61,7 +84,8 @@ Error response example:
 {
   "success": false,
   "output": null,
-  "error": "Table 'STUDENTS' already exists."
+  "error": "Table 'STUDENTS' already exists.",
+  "results": null
 }
 ```
 
@@ -84,6 +108,10 @@ Response example:
 - Multiple SQL statements in one request are supported if semicolon-terminated.
 - Catalog is in-memory and process-local.
 - All API errors are returned as structured JSON via `SqlResponse`.
+- The API now returns `results` blocks for successful execution.
+- `SELECT` table output is exposed in both forms:
+  - `output`: legacy text rendering
+  - `results`: structured columns and rows for the frontend
 
 ## Supported Statements (Current)
 - `CREATE TABLE`
@@ -115,5 +143,5 @@ Default port:
 ## Current Limitations
 - No persistence (data is lost on restart).
 - Concurrency model is synchronized at engine level (`DbmsCliEngine` methods are synchronized).
-- SQL output is text captured from `System.out` (legacy-compatible, not tabular JSON yet).
+- Pagination is not implemented yet for table results.
 - Only equality operator (`=`) is currently implemented for WHERE conditions.

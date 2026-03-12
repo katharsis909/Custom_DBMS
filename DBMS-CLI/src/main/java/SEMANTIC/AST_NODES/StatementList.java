@@ -2,6 +2,8 @@ package SEMANTIC.AST_NODES;
 
 import STRUCTURE.Catalog;
 import STRUCTURE.DBMSException;
+import dbmscli.result.ExecutionResult;
+import dbmscli.result.QueryResultBlock;
 
 import java.util.List;
 
@@ -28,5 +30,14 @@ public class StatementList {
             statement.evaluate(db);
         }
         //return log;
+    }
+
+    public ExecutionResult execute(Catalog db) throws DBMSException {
+        ExecutionResult result = new ExecutionResult();
+        for (Statement statement : getStatements()) {
+            QueryResultBlock block = statement.execute(db);
+            result.addBlock(block);
+        }
+        return result;
     }
 }

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniSQL Workbench</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main class="shell">
+    <section class="hero">
+        <p class="eyebrow">MiniSQL Workbench</p>
+        <h1>Run DBMS queries in a browser-backed editor.</h1>
+        <p class="lede">Use the same Spring Boot API, but work from a focused SQL editor. Table results are rendered as HTML tables. Error output is highlighted separately.</p>
+    </section>
+
+    <section class="workspace">
+        <div class="panel editor-panel">
+            <div class="panel-header">
+                <div>
+                    <p class="panel-label">Editor</p>
+                    <h2>SQL Input</h2>
+                </div>
+                <div class="panel-actions">
+                    <button id="runButton" class="primary" type="button">Run Query</button>
+                    <button id="resetButton" class="secondary" type="button">Reset Catalog</button>
+                </div>
+            </div>
+            <label class="editor-frame" for="sqlInput">
+                <span class="editor-title">query.sql</span>
+                <textarea id="sqlInput" spellcheck="false">CREATE TABLE student (name STRING, age INT, marks INT);
+INSERT INTO student ('aryan', 54, 78);
+INSERT INTO student ('aryan', 54, 85);
+SELECT * FROM student;</textarea>
+            </label>
+        </div>
+
+        <div class="panel output-panel">
+            <div class="panel-header">
+                <div>
+                    <p class="panel-label">Output</p>
+                    <h2>Execution Result</h2>
+                </div>
+                <span id="statusBadge" class="status-badge idle">Idle</span>
+            </div>
+            <div id="outputArea" class="output-body muted">
+                Run a statement to see textual output or table results here.
+            </div>
+        </div>
+    </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
