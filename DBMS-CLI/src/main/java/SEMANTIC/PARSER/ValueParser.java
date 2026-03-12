@@ -9,9 +9,11 @@ import SEMANTIC.PARSER.Exception.ParseException;
 
 public class ValueParser {
     public static Value parse(ParserContext ctx) throws ParseException, LexerException {
+        int valuePosition = ctx.current().getPosition();
         Literal literal = LiteralParser.parse(ctx);
 
         Value value = new Value();
+        value.setSourcePosition(valuePosition);
         value.setLiteral(literal);
 
         return value;

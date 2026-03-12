@@ -8,17 +8,22 @@
 </head>
 <body>
 <main class="shell">
-    <section class="hero">
-        <p class="eyebrow">MiniSQL Workbench</p>
-        <h1>Run DBMS queries in a browser-backed editor.</h1>
-        <p class="lede">Use the same Spring Boot API, but work from a focused SQL editor. Table results are rendered as HTML tables. Error output is highlighted separately.</p>
-    </section>
+    <header class="page-header">
+        <div>
+            <h1>MiniSQL Workbench</h1>
+            <p class="subtitle">Write SQL on the left. Results and errors appear on the right.</p>
+        </div>
+        <div class="quick-notes">
+            <span class="note-chip">`SELECT` tables render as HTML tables</span>
+            <span class="note-chip">Errors are highlighted in red</span>
+        </div>
+    </header>
 
     <section class="workspace">
         <div class="panel editor-panel">
             <div class="panel-header">
                 <div>
-                    <p class="panel-label">Editor</p>
+                    <p class="panel-label">Query Editor</p>
                     <h2>SQL Input</h2>
                 </div>
                 <div class="panel-actions">
@@ -38,13 +43,16 @@ SELECT * FROM student;</textarea>
         <div class="panel output-panel">
             <div class="panel-header">
                 <div>
-                    <p class="panel-label">Output</p>
-                    <h2>Execution Result</h2>
+                    <p class="panel-label">Results</p>
+                    <h2>Execution Output</h2>
                 </div>
                 <span id="statusBadge" class="status-badge idle">Idle</span>
             </div>
             <div id="outputArea" class="output-body muted">
-                Run a statement to see textual output or table results here.
+                <div class="empty-state">
+                    <h3>No result yet</h3>
+                    <p>Run a statement to view text output, errors, or rendered table results.</p>
+                </div>
             </div>
         </div>
     </section>

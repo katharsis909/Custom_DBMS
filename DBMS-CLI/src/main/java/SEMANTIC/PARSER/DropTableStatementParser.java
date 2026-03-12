@@ -10,15 +10,16 @@ import LEXICAL.*;
 
 public class DropTableStatementParser {
     public static DropTableStatement parse(ParserContext ctx) throws ParseException, LexerException {
+        int statementPosition = ctx.current().getPosition();
         // Expect "DROP"
         if (ctx.current().getType() != TokenType.DROP) {
-            throw new ParseException("Expected 'DROP' but found: " + ctx.current().getLexeme());
+            throw ctx.error("Expected 'DROP' but found: " + ctx.current().getLexeme());
         }
         ctx.advance();
 
         // Expect "TABLE"
         if (ctx.current().getType() != TokenType.TABLE) {
-            throw new ParseException("Expected 'TABLE' after DROP but found: " + ctx.current().getLexeme());
+            throw ctx.error("Expected 'TABLE' after DROP but found: " + ctx.current().getLexeme());
         }
         ctx.advance();
 
@@ -27,6 +28,7 @@ public class DropTableStatementParser {
         Identifier tableName = IdentifierParser.parse(ctx);
 
         DropTableStatement stmt = new DropTableStatement();
+        stmt.setSourcePosition(statementPosition);
         stmt.setTableName(tableName);
         return stmt;
     }

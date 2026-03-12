@@ -31,13 +31,24 @@ public class InsertIntoStatement extends Statement {
     }
 
     public QueryResultBlock execute(Catalog catalog) throws DBMSException {
-        Table table = catalog.getTable(getTableName().getName());
-        if (table == null) {
-            throw new DBMSException("Table not found: " + getTableName().getName());
-        }
+        try {
+            Table table = catalog.getTable(getTableName().getName());
+            if (table == null) {
+                throw new DBMSException("Table not found: " + getTableName().getName(), getSourcePosition());
+            }
 
-        List<DBMSDataType> values = valueList.evaluate(table.getColumnList());
-        table.addRecord(values);
+            List<DBMSDataType> values = valueList.evaluate(table.getColumnList());
+            table.addRecord(values);
+        } catch (DBMSException exception) {
+            throw attachPosition(exception, getSourcePosition());
+        }
         return null;
+    }
+
+    private DBMSException attachPosition(DBMSException exception, int position) {
+        if (exception.getPosition() != null) {
+            return exception;
+        }
+        return new DBMSException(exception.getMessage(), position);
     }
 }

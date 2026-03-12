@@ -12,7 +12,7 @@ public class OperatorParser {
         Token token = ctx.current();
 
         if (token.getType() != TokenType.EQUAL) {
-            throw new ParseException("Expected '=' operator, " + token.getPosition());
+            throw ctx.errorAt("Expected '=' operator but found: " + token.getLexeme(), token.getPosition());
         }
         //expect function of ctx will print EQUAL instead of =; so do not use
 

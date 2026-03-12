@@ -21,7 +21,7 @@ public class StatementParser {
             case INSERT:
                 return InsertIntoStatementParser.parse(ctx);
             default:
-                throw new ParseException("Unknown statement start: " + ctx.current().getLexeme());
+                throw ctx.error("Unknown statement start: " + ctx.current().getLexeme());
         }
     }
 }

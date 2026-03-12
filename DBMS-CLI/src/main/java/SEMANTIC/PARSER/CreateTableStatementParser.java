@@ -11,13 +11,14 @@ import LEXICAL.TokenType;
 
 public class CreateTableStatementParser {
     public static CreateTableStatement parse(ParserContext ctx) throws ParseException, LexerException {
+        int statementPosition = ctx.current().getPosition();
         // Expect: CREATE TABLE
         if (ctx.current().getType() != TokenType.CREATE)
-            throw new ParseException("Expected 'CREATE' at start of CREATE TABLE statement");
+            throw ctx.error("Expected 'CREATE' at start of CREATE TABLE statement");
         ctx.advance();
 
         if (ctx.current().getType() != TokenType.TABLE)
-            throw new ParseException("Expected 'TABLE' after 'CREATE'");
+            throw ctx.error("Expected 'TABLE' after 'CREATE'");
         ctx.advance();
 
         // Parse table name
@@ -25,7 +26,7 @@ public class CreateTableStatementParser {
 
         // Expect "("
         if (ctx.current().getType() != TokenType.LPAREN)
-            throw new ParseException("Expected '(' after table name");
+            throw ctx.error("Expected '(' after table name");
         ctx.advance();
 
         // Parse column columnList
@@ -33,11 +34,12 @@ public class CreateTableStatementParser {
 
         // Expect ")"
         if (ctx.current().getType() != TokenType.RPAREN)
-            throw new ParseException("Expected ')' after column columnList");
+            throw ctx.error("Expected ')' after column columnList");
         ctx.advance();
 
         // Construct AST
         CreateTableStatement stmt = new CreateTableStatement();
+        stmt.setSourcePosition(statementPosition);
         stmt.setTableName(tableName);
         stmt.setColumns(columns);
         return stmt;

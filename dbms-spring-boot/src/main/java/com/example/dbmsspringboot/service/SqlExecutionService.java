@@ -3,6 +3,7 @@ package com.example.dbmsspringboot.service;
 import com.example.dbmsspringboot.dto.SqlResultBlock;
 import com.example.dbmsspringboot.dto.SqlResponse;
 import dbmscli.DbmsCliEngine;
+import dbmscli.SqlErrorFormatter;
 import dbmscli.result.ExecutionResult;
 import dbmscli.result.QueryResultBlock;
 import org.springframework.stereotype.Service;
@@ -36,7 +37,7 @@ public class SqlExecutionService {
             }
             return new SqlResponse(true, output, null, toResponseBlocks(executionResult));
         } catch (Exception ex) {
-            return new SqlResponse(false, null, ex.getMessage(), null);
+            return new SqlResponse(false, null, SqlErrorFormatter.format(normalizedSql, ex), null);
         }
     }
 

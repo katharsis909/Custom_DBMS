@@ -1,3 +1,5 @@
+package dbmscli;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,6 +10,16 @@ public class SourceDocument {
     public SourceDocument(String text, List<String> lines) {
         this.text = text;
         this.lines = new ArrayList<>(lines);
+    }
+
+    public static SourceDocument fromText(String text) {
+        String normalizedText = text == null ? "" : text;
+        String[] splitLines = normalizedText.split("\\R", -1);
+        List<String> lines = new ArrayList<>();
+        for (String line : splitLines) {
+            lines.add(line);
+        }
+        return new SourceDocument(normalizedText, lines);
     }
 
     public String getText() {

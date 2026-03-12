@@ -7,6 +7,7 @@ import STRUCTURE.DBMSException;
 
 public class Value {
     private Literal literal;
+    private int sourcePosition = -1;
 
     public Literal getLiteral() {
         return literal;
@@ -16,10 +17,18 @@ public class Value {
         this.literal = literal;
     }
 
+    public int getSourcePosition() {
+        return sourcePosition;
+    }
+
+    public void setSourcePosition(int sourcePosition) {
+        this.sourcePosition = sourcePosition;
+    }
+
     public DBMSDataType evaluate(Column column) throws DBMSException {
         DBMSDataType temp = getLiteral().evaluate();
         if( !temp.typeEquals(column.getColumn_type()) )
-            throw new DBMSException("Inserted value - " + temp.toString() + " with data type " + temp.getType() + ", which does not matches the data type " + column.getColumn_type() + " of column - " + column.getColumnName());
+            throw new DBMSException("Inserted value - " + temp.toString() + " with data type " + temp.getType() + ", which does not matches the data type " + column.getColumn_type() + " of column - " + column.getColumnName(), sourcePosition);
         return temp;
     }
 }

@@ -25,7 +25,7 @@ public class LiteralParser {
                     //NUMERIC_LITERAL matched means, Integer.valueOf will be successful 100%
                     return numLit;
             default:
-                throw new ParseException("Expected String/Numeric literal but found: " + token.getLexeme() + " at position " + token.getPosition());
+                throw context.errorAt("Expected String/Numeric literal but found: " + token.getLexeme(), token.getPosition());
         }
     }
 }

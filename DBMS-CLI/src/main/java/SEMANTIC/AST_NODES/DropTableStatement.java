@@ -18,9 +18,20 @@ public class DropTableStatement extends Statement
     }
 
     public QueryResultBlock execute(Catalog catalog) throws DBMSException {
-        String name = tableName.getName();
-        //no ambiguities!
-        catalog.dropTable(name);
+        try {
+            String name = tableName.getName();
+            //no ambiguities!
+            catalog.dropTable(name);
+        } catch (DBMSException exception) {
+            throw attachPosition(exception, getSourcePosition());
+        }
         return null;
+    }
+
+    private DBMSException attachPosition(DBMSException exception, int position) {
+        if (exception.getPosition() != null) {
+            return exception;
+        }
+        return new DBMSException(exception.getMessage(), position);
     }
 }

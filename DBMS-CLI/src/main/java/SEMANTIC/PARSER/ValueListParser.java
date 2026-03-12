@@ -12,6 +12,7 @@ import java.util.List;
 
 public class ValueListParser {
     public static ValueList parse(ParserContext ctx) throws ParseException, LexerException {
+        int listPosition = ctx.current().getPosition();
         List<Value> values = new ArrayList<>();
 
         values.add(ValueParser.parse(ctx));
@@ -22,6 +23,7 @@ public class ValueListParser {
         }
 
         ValueList list = new ValueList();
+        list.setSourcePosition(listPosition);
         list.setValues(values);
         return list;
     }

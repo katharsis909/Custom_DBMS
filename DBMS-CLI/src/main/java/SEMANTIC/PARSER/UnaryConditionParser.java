@@ -13,11 +13,13 @@ import SEMANTIC.PARSER.util.ParserContext;
 
 public class UnaryConditionParser {
     public static UnaryCondition parse(ParserContext ctx) throws ParseException, LexerException {
+        int conditionPosition = ctx.current().getPosition();
         Identifier columnName = IdentifierParser.parse(ctx);
         Operator operator = OperatorParser.parse(ctx);
         Literal value = LiteralParser.parse(ctx);
 
         UnaryCondition condition = new UnaryCondition();
+        condition.setSourcePosition(conditionPosition);
         condition.setColumnName(columnName);
         condition.setOperator(operator);
         condition.setValue(value);

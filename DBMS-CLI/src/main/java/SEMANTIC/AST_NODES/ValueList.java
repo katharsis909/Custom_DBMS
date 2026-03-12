@@ -9,6 +9,7 @@ import java.util.List;
 
 public class ValueList {
     private List<Value> values;
+    private int sourcePosition = -1;
 
     public List<Value> getValues() {
         return values;
@@ -18,9 +19,17 @@ public class ValueList {
         this.values = values;
     }
 
+    public int getSourcePosition() {
+        return sourcePosition;
+    }
+
+    public void setSourcePosition(int sourcePosition) {
+        this.sourcePosition = sourcePosition;
+    }
+
     public List<DBMSDataType> evaluate(List<Column> columnList) throws DBMSException {
         if( values.size() != columnList.size())
-            throw new DBMSException("Inserted Values length - " + values.size() +" do not match Table columns length - " + columnList.size() + ".");
+            throw new DBMSException("Inserted Values length - " + values.size() +" do not match Table columns length - " + columnList.size() + ".", sourcePosition);
         List<DBMSDataType> result = new java.util.ArrayList<>();
 
         for(int i = 0; i < values.size(); i++)

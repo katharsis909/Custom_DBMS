@@ -10,7 +10,7 @@ import LEXICAL.TokenType;
 public class WhereClauseParser {
     public static WhereClause parse(ParserContext ctx) throws ParseException, LexerException {
         if (ctx.current().getType() != TokenType.WHERE) {
-            throw new ParseException("Expected WHERE, found: " + ctx.current().getLexeme());
+            throw ctx.error("Expected WHERE, found: " + ctx.current().getLexeme());
         }
 
         ctx.advance(); // skip "WHERE"

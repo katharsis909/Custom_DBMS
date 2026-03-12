@@ -10,6 +10,7 @@ public class UnaryCondition {
     private Identifier columnName;
     private Operator operator; // only "=" for now
     private Literal value;
+    private int sourcePosition = -1;
 
     public Identifier getColumnName() {
         return columnName;
@@ -35,8 +36,21 @@ public class UnaryCondition {
         this.value = value;
     }
 
+    public int getSourcePosition() {
+        return sourcePosition;
+    }
+
+    public void setSourcePosition(int sourcePosition) {
+        this.sourcePosition = sourcePosition;
+    }
+
     public boolean evaluate(Record record) throws DBMSException {
-        DBMSDataType actualValue = record.getValue(getColumnName().getName());
+        DBMSDataType actualValue;
+        try {
+            actualValue = record.getValue(getColumnName().getName());
+        } catch (DBMSException exception) {
+            throw new DBMSException(exception.getMessage(), sourcePosition);
+        }
         // Extract the actual value from the record using the column name
         //hover on Columnname to know the Class of it
 

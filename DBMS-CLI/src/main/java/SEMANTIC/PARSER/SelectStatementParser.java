@@ -14,15 +14,16 @@ import LEXICAL.TokenType;
 
 public class SelectStatementParser {
     public static SelectStatement parse(ParserContext ctx) throws ParseException, LexerException {
+        int statementPosition = ctx.current().getPosition();
         if (ctx.current().getType() != TokenType.SELECT) {
-            throw new ParseException("Expected SELECT, found: " + ctx.current().getLexeme());
+            throw ctx.error("Expected SELECT, found: " + ctx.current().getLexeme());
         }
         ctx.advance(); // consume "SELECT"
 
         SelectedColumnList selectedColumns = SelectedColumnListParser.parse(ctx);
 
         if (ctx.current().getType() != TokenType.FROM) {
-            throw new ParseException("Expected FROM, found: " + ctx.current().getLexeme());
+            throw ctx.error("Expected FROM, found: " + ctx.current().getLexeme());
         }
         ctx.advance(); // consume "FROM"
 
@@ -34,6 +35,7 @@ public class SelectStatementParser {
         }
 
         SelectStatement stmt = new SelectStatement();
+        stmt.setSourcePosition(statementPosition);
         stmt.setSelectedColumnList(selectedColumns);
         stmt.setTableName(tableName);
         stmt.setWhereClause(whereClause);

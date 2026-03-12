@@ -11,31 +11,33 @@ import LEXICAL.TokenType;
 
 public class InsertIntoStatementParser {
     public static InsertIntoStatement parse(ParserContext ctx) throws ParseException, LexerException {
+        int statementPosition = ctx.current().getPosition();
         if (ctx.current().getType() != TokenType.INSERT) {
-            throw new ParseException("Expected INSERT, found: " + ctx.current().getLexeme());
+            throw ctx.error("Expected INSERT, found: " + ctx.current().getLexeme());
         }
         ctx.advance(); // INSERT
 
         if (ctx.current().getType() != TokenType.INTO) {
-            throw new ParseException("Expected INTO, found: " + ctx.current().getLexeme());
+            throw ctx.error("Expected INTO, found: " + ctx.current().getLexeme());
         }
         ctx.advance(); // INTO
 
         Identifier tableName = IdentifierParser.parse(ctx);
 
         if (ctx.current().getType() != TokenType.LPAREN) {
-            throw new ParseException("Expected (, found: " + ctx.current().getLexeme());
+            throw ctx.error("Expected (, found: " + ctx.current().getLexeme());
         }
         ctx.advance(); // (
 
         ValueList valueList = ValueListParser.parse(ctx);
 
         if (ctx.current().getType() != TokenType.RPAREN) {
-            throw new ParseException("Expected ), found: " + ctx.current().getLexeme());
+            throw ctx.error("Expected ), found: " + ctx.current().getLexeme());
         }
         ctx.advance(); // )
 
         InsertIntoStatement stmt = new InsertIntoStatement();
+        stmt.setSourcePosition(statementPosition);
         stmt.setTableName(tableName);
         stmt.setValueList(valueList);
         return stmt;

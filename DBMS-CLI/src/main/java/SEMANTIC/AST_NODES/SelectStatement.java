@@ -41,35 +41,39 @@ public class SelectStatement extends Statement {
     }
 
     public QueryResultBlock execute(Catalog db) throws DBMSException {
-        Table table = db.getTable(getTableName().getName());
-        //FROM is executed before
-        List<Record> allRecords = table.getRecordList();
+        try {
+            Table table = db.getTable(getTableName().getName());
+            //FROM is executed before
+            List<Record> allRecords = table.getRecordList();
 
-        List<Record> filtered = new ArrayList<>();
-        //validated records to be returned
-        for (Record r : allRecords)
-        {
-            if (getWhereClause() == null || getWhereClause().evaluate(r))
-            //First use Where; above also checked for "Where not present"
+            List<Record> filtered = new ArrayList<>();
+            //validated records to be returned
+            for (Record r : allRecords)
             {
-                filtered.add(r);
+                if (getWhereClause() == null || getWhereClause().evaluate(r))
+                //First use Where; above also checked for "Where not present"
+                {
+                    filtered.add(r);
+                }
             }
-        }
 
-        List<List<String>> rows = new ArrayList<>();
-        for (Record r : filtered) {
-            //Second, from the validated records, now select specific columns
-            //No need to pass information of which columns to select, all info in the below nodes
-            //Crazy design pattern!
-            List<DBMSDataType> selectedValues = selectedColumnList.evaluate(r,table);
-            List<String> row = new ArrayList<>();
-            for (DBMSDataType value : selectedValues) {
-                row.add(value.toString());
+            List<List<String>> rows = new ArrayList<>();
+            for (Record r : filtered) {
+                //Second, from the validated records, now select specific columns
+                //No need to pass information of which columns to select, all info in the below nodes
+                //Crazy design pattern!
+                List<DBMSDataType> selectedValues = selectedColumnList.evaluate(r,table);
+                List<String> row = new ArrayList<>();
+                for (DBMSDataType value : selectedValues) {
+                    row.add(value.toString());
+                }
+                rows.add(row);
             }
-            rows.add(row);
+            List<String> headers = buildHeaders(selectedColumnList, table);
+            return QueryResultBlock.table(headers, rows);
+        } catch (DBMSException exception) {
+            throw attachPosition(exception, getSourcePosition());
         }
-        List<String> headers = buildHeaders(selectedColumnList, table);
-        return QueryResultBlock.table(headers, rows);
     }
 
     private List<String> buildHeaders(SelectedColumnList selectedColumnList, Table table) {
@@ -85,6 +89,13 @@ public class SelectStatement extends Statement {
             headers.add(selectedColumnList.getColumns().get(i).getColumnName().getName());
         }
         return headers;
+    }
+
+    private DBMSException attachPosition(DBMSException exception, int position) {
+        if (exception.getPosition() != null) {
+            return exception;
+        }
+        return new DBMSException(exception.getMessage(), position);
     }
 
 }

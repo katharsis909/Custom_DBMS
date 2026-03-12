@@ -72,7 +72,7 @@ public class Lexer {
         else
         //Fallback
         //return new Token(TokenType.INVALID, Character.toString(c), pos++);
-        throw new LexerException("INVALID token at position " + pos);
+        throw new LexerException("INVALID token", pos);
     }
 
     private void skipWhitespace() 

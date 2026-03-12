@@ -48,12 +48,20 @@ public class ParserContext {
             //no need to save globally as already done inside advance()
             return tok;
         } else {
-            throw new ParseException("Expected token " + type + " but found " + current.getType() + " at position " + current.getPosition());
+            throw error("Expected token " + type + " but found " + current.getType());
         }
     }
 
     public boolean isAtEnd() {
         return current.getType() == TokenType.EOF;
+    }
+
+    public ParseException error(String message) {
+        return new ParseException(message, current.getPosition());
+    }
+
+    public ParseException errorAt(String message, int position) {
+        return new ParseException(message, position);
     }
 
 }

@@ -21,7 +21,7 @@ public class StatementListParser {
             statements.add(stmt);
 
             if (ctx.current().getType() != TokenType.SEMICOLON) {
-                throw new ParseException("Expected ';' after statement, found: " + ctx.current().getLexeme());
+                throw ctx.error("Expected ';' after statement, found: " + ctx.current().getLexeme());
             }
             ctx.advance(); // Consume ';'
         }

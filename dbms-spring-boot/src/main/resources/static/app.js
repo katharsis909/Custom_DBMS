@@ -97,14 +97,26 @@ function updateStatus(state, label) {
 }
 
 function buildResultBlock(block) {
+    const container = document.createElement("section");
+
+    const label = document.createElement("p");
+    label.className = "result-block-label";
+
     if (Array.isArray(block.columns) && Array.isArray(block.rows)) {
-        return buildTable(block.columns, block.rows);
+        label.textContent = "Table Result";
+        container.appendChild(label);
+        container.appendChild(buildTable(block.columns, block.rows));
+        return container;
     }
+
+    label.textContent = "Message";
+    container.appendChild(label);
 
     const pre = document.createElement("pre");
     pre.className = "text-output";
     pre.textContent = block.message || "";
-    return pre;
+    container.appendChild(pre);
+    return container;
 }
 
 function buildTable(headers, rows) {

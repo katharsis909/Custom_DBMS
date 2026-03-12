@@ -16,7 +16,7 @@ public class DataTypeParser {
             ctx.advance();
             return dt;
         } else {
-            throw new ParseException("Expected data type INT or STRING but found: " + ctx.current().getLexeme());
+            throw ctx.error("Expected data type INT or STRING but found: " + ctx.current().getLexeme());
         }
     }
 }

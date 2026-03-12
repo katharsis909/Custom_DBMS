@@ -28,8 +28,19 @@ public class CreateTableStatement extends Statement {
     }
 
     public QueryResultBlock execute(Catalog db) throws DBMSException {
-        Table table = Main.toTable(this);
-        db.addTable(table);
+        try {
+            Table table = Main.toTable(this);
+            db.addTable(table);
+        } catch (DBMSException exception) {
+            throw attachPosition(exception, getSourcePosition());
+        }
         return null;
+    }
+
+    private DBMSException attachPosition(DBMSException exception, int position) {
+        if (exception.getPosition() != null) {
+            return exception;
+        }
+        return new DBMSException(exception.getMessage(), position);
     }
 }
