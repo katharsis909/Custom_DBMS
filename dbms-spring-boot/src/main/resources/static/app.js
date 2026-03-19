@@ -39,7 +39,7 @@ async function executeSql() {
 }
 
 async function resetCatalog() {
-    setRunningState(true, "Resetting");
+    setRunningState(true, "Reloading");
     try {
         const response = await fetch("/api/sql/reset", {
             method: "POST"
@@ -47,11 +47,11 @@ async function resetCatalog() {
 
         const payload = await response.json();
         if (!response.ok || !payload.success) {
-            renderError(payload.error || "Catalog reset failed");
+            renderError(payload.error || "Catalog reload failed");
             return;
         }
 
-        renderSuccess(payload.output || "Catalog reset", payload);
+        renderSuccess(payload.output || "Catalog reloaded from disk", payload);
     } catch (error) {
         renderError("Unable to reach the API. Make sure the Spring Boot app is running.");
     } finally {
@@ -103,7 +103,7 @@ function buildResultBlock(block) {
     label.className = "result-block-label";
 
     if (Array.isArray(block.columns) && Array.isArray(block.rows)) {
-        label.textContent = "Table Result";
+        label.textContent = "Table";
         container.appendChild(label);
         container.appendChild(buildTable(block.columns, block.rows));
         return container;

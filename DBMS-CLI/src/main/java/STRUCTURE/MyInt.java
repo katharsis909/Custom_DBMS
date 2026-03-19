@@ -4,7 +4,7 @@ public class MyInt implements DBMSDataType
 {
     private final int value;
     //this data type will be actually stored in the Records
-    private MyInt(int value) 
+    private MyInt(int value)
     {
         this.value = value;
     }
@@ -14,31 +14,20 @@ public class MyInt implements DBMSDataType
             return new MyInt(val);
     }
 
+    public int getValue() {
+        return value;
+    }
+
     @Override
-    public String toString() 
+    public String toString()
     {
         return Integer.toString(value);
     }
-    
-    /* @Override
-    public int dataTypeCode() {
-        return 1;
-    }
-
-    @Override
-    public boolean valueEquals(DBMSDataType other) {
-        //if (other instanceof MyInt) 
-        //{
-            return this.value == ((MyInt)(other)).value;
-        //}
-        //return false;
-    }*/
 
     @Override
     public boolean equals(DBMSDataType other) {
-        //return this.dataTypeCode() == other.dataTypeCode() && this.valueEquals(other);
         return (other instanceof MyInt)
-                && this.value == ((MyInt)(other)).value;//a - Such a thing is possible Wow!
+                && this.value == ((MyInt)(other)).value;
     }
 
     @Override
@@ -56,4 +45,3 @@ public class MyInt implements DBMSDataType
         return "INT";
     }
 }
-

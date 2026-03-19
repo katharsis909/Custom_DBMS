@@ -17,3 +17,6 @@ out/
 # BlueJ artifacts
 *.ctxt
 package.bluej
+
+# Runtime persistence data
+data/

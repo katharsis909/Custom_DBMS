@@ -4,9 +4,10 @@ import SEMANTIC.AST_NODES.LEAF_NODES.Identifier;
 import STRUCTURE.Catalog;
 import STRUCTURE.DBMSDataType;
 import STRUCTURE.DBMSException;
-import STRUCTURE.Table;
 import STRUCTURE.Record;
+import STRUCTURE.Table;
 import dbmscli.result.QueryResultBlock;
+import disk_persistence.TableIterator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,32 +44,21 @@ public class SelectStatement extends Statement {
     public QueryResultBlock execute(Catalog db) throws DBMSException {
         try {
             Table table = db.getTable(getTableName().getName());
-            //FROM is executed before
-            List<Record> allRecords = table.getRecordList();
-
-            List<Record> filtered = new ArrayList<>();
-            //validated records to be returned
-            for (Record r : allRecords)
-            {
-                if (getWhereClause() == null || getWhereClause().evaluate(r))
-                //First use Where; above also checked for "Where not present"
-                {
-                    filtered.add(r);
-                }
-            }
+            TableIterator iterator = table.iterator();
 
             List<List<String>> rows = new ArrayList<>();
-            for (Record r : filtered) {
-                //Second, from the validated records, now select specific columns
-                //No need to pass information of which columns to select, all info in the below nodes
-                //Crazy design pattern!
-                List<DBMSDataType> selectedValues = selectedColumnList.evaluate(r,table);
-                List<String> row = new ArrayList<>();
-                for (DBMSDataType value : selectedValues) {
-                    row.add(value.toString());
+            while (iterator.hasNext()) {
+                Record record = iterator.next();
+                if (getWhereClause() == null || getWhereClause().evaluate(record)) {
+                    List<DBMSDataType> selectedValues = selectedColumnList.evaluate(record, table);
+                    List<String> row = new ArrayList<>();
+                    for (DBMSDataType value : selectedValues) {
+                        row.add(value.toString());
+                    }
+                    rows.add(row);
                 }
-                rows.add(row);
             }
+
             List<String> headers = buildHeaders(selectedColumnList, table);
             return QueryResultBlock.table(headers, rows);
         } catch (DBMSException exception) {
@@ -97,5 +87,4 @@ public class SelectStatement extends Statement {
         }
         return new DBMSException(exception.getMessage(), position);
     }
-
 }

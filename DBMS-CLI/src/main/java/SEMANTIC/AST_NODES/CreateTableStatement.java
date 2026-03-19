@@ -4,7 +4,6 @@ import Converter.Main;
 import SEMANTIC.AST_NODES.LEAF_NODES.Identifier;
 import STRUCTURE.Catalog;
 import STRUCTURE.DBMSException;
-import STRUCTURE.Table;
 import dbmscli.result.QueryResultBlock;
 
 public class CreateTableStatement extends Statement {
@@ -29,8 +28,7 @@ public class CreateTableStatement extends Statement {
 
     public QueryResultBlock execute(Catalog db) throws DBMSException {
         try {
-            Table table = Main.toTable(this);
-            db.addTable(table);
+            db.addTable(getTableName().getName(), Main.toColumnListFromDefinition(getColumns().getColumnList()));
         } catch (DBMSException exception) {
             throw attachPosition(exception, getSourcePosition());
         }

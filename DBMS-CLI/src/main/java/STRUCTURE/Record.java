@@ -10,7 +10,7 @@ public class Record
 {
     private HashMap<String, DBMSDataType> data;
 
-    Record()
+    public Record()
     {
         this.data = new HashMap<>();
     }
@@ -21,7 +21,7 @@ public class Record
     }
     //I am sure It would come into use somewhere
 
-    void setValue(String columnName, DBMSDataType value)
+    public void setValue(String columnName, DBMSDataType value)
     {
         data.put(columnName, value);
     }

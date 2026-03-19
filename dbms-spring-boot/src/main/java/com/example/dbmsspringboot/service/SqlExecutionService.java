@@ -43,7 +43,7 @@ public class SqlExecutionService {
 
     public SqlResponse resetCatalog() {
         engine.reset();
-        return new SqlResponse(true, "Catalog reset", null, null);
+        return new SqlResponse(true, "Catalog reloaded from disk", null, null);
     }
 
     private List<SqlResultBlock> toResponseBlocks(ExecutionResult executionResult) {

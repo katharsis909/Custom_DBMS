@@ -1,42 +1,91 @@
 # Spring Boot Integration for MiniSQL DBMS CLI
 
 ## Feature Summary
-This feature wraps the existing MiniSQL CLI engine into a Spring Boot application so SQL can be executed through HTTP endpoints using a controller-service design.
+This project wraps the MiniSQL engine inside a Spring Boot application so SQL can be executed through HTTP endpoints using a controller-service design.
 
-The original parser/evaluator pipeline is reused as-is:
-`Lexer -> ParserContext -> StatementListParser -> AST evaluate(Catalog)`.
+The execution pipeline is still:
+`Lexer -> ParserContext -> StatementListParser -> AST -> Catalog/Table`.
 
-## What Was Added
+The important change is that `Catalog` and `Table` are now backed by on-disk persistence.
 
-The repository now uses two Maven modules:
-- `DBMS-CLI` (engine module)
-- `dbms-spring-boot` (web/API module)
+## Essential Changes
 
-Core DBMS integration pieces:
-- `DBMS-CLI/src/main/java/dbmscli/DbmsCliEngine.java`
-- `execute(String sql)`
-  - parses and evaluates SQL using the existing compiler-style pipeline
-  - returns the rendered text form of the structured execution result
-- `executeStructured(String sql)`
-  - returns structured result blocks for the web layer
-  - exposes table results as columns plus row values instead of raw printed text
-- `reset()`
-  - reinitializes the in-memory `Catalog`
-- `DBMS-CLI/src/main/java/dbmscli/SourceDocument.java`
-  - maps flat source positions to line and column
-- `DBMS-CLI/src/main/java/dbmscli/SqlErrorFormatter.java`
-  - formats parse and runtime errors consistently for both CLI and Spring Boot
-- `dbms-spring-boot/src/main/java/com/example/dbmsspringboot/service/SqlExecutionService.java`
-  - validates input, delegates to the engine, and maps structured result blocks into API DTOs
-- `dbms-spring-boot/src/main/resources/static/`
-  - serves the browser workbench frontend with editor-style input, red error rendering, and HTML tables for `SELECT`
+### DBMS CLI side
+- `Catalog` now auto-loads tables from `data/` on startup
+- `Table` now owns schema plus `PageManager`
+- `SELECT` now streams records through `TableIterator`
+- `CREATE TABLE` writes `schema.txt`
+- `DROP TABLE` deletes the table directory
+
+### Spring Boot side
+- `DbmsCliEngine` now works against a persistence-backed catalog
+- `SqlExecutionService` still returns structured `results`
+- `/api/sql/reset` now means reload catalog from disk
+- the static frontend remains table-aware, but the visible copy was simplified
+
+## Persistence Integration
+
+The persistence package lives under:
+- `DBMS-CLI/src/main/java/disk_persistence/`
+
+Main classes:
+- `Page`
+- `RowSerializer`
+- `PageManager`
+- `TableIterator`
+
+Full storage documentation:
+- [Disk Persistence Architecture](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/Disk-Persistence-Architecture.md)
+- [disk_persistence Package](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/README.md)
+
+## Disk Layout
+
+```text
+data/
+  <tableName>/
+    schema.txt
+    page_0.dat
+    page_1.dat
+    ...
+```
+
+Notes:
+- `schema.txt` stores the ordered schema used by row serialization
+- each `page_<id>.dat` file is one fixed 4 KB page
+- inserts are append-only into the last page
+
+## Statement Integration
+
+### CREATE TABLE
+- validates table name uniqueness in catalog
+- persists schema to `schema.txt`
+- creates a storage-backed `Table`
+- registers it in memory
+
+### INSERT INTO
+- validates values against schema
+- builds a logical `Record`
+- serializes the row
+- inserts and flushes it through `PageManager`
+
+### SELECT
+- scans with `TableIterator`
+- loads page bytes through `PageManager`
+- deserializes rows through `RowSerializer`
+- applies `WHERE` and projection
+- returns structured output blocks to the web layer
+
+### DROP TABLE
+- removes the table from catalog
+- deletes the table directory from disk
 
 ## API Endpoints
 
 ### Execute SQL
 - Method: `POST`
 - Path: `/api/sql/execute`
-- Body:
+
+Example body:
 ```json
 {
   "sql": "CREATE TABLE students (id INT, name STRING);"
@@ -69,49 +118,32 @@ Error response example:
 }
 ```
 
-### Reset in-memory catalog
+### Reload Catalog
 - Method: `POST`
 - Path: `/api/sql/reset`
-- Body: none
+- reloads catalog state from persisted storage
 
-Response example:
+Example response:
 ```json
 {
   "success": true,
-  "output": "Catalog reset",
+  "output": "Catalog reloaded from disk",
   "error": null
 }
 ```
 
-## Execution Behavior Notes
-- If incoming SQL does not end with `;`, service appends one.
-- Multiple SQL statements in one request are supported if semicolon-terminated.
-- Catalog is in-memory and process-local.
-- All API errors are returned through `SqlResponse`.
-- Successful execution returns `results` blocks for structured rendering.
-- `SELECT` output is exposed in both forms:
-  - `output` as rendered text
-  - `results` as structured columns and rows
-- Error messages are formatted through the shared DBMS-side formatter, so CLI and browser errors use the same line-aware text.
+## Browser Workbench
 
-## Supported Statements (Current)
-- `CREATE TABLE`
-- `INSERT INTO`
-- `SELECT ... FROM ... [WHERE ... AND ...]`
-- `DROP TABLE`
+The UI served at `/` provides:
+- SQL editor textarea
+- Run and Reload Catalog actions
+- red error output
+- HTML tables for structured table results
 
-## Quick Test Statements
-Use with `/api/sql/execute`:
-
-1. `CREATE TABLE students (id INT, name STRING);`
-2. `INSERT INTO students (1, 'Ava');`
-3. `INSERT INTO students (2, 'Noah');`
-4. `SELECT * FROM students;`
-5. `SELECT name FROM students WHERE id = 1;`
-6. `SELECT * FROM students WHERE id = 2 AND name = 'Noah';`
-7. `DROP TABLE students;`
+The copy in the workbench was intentionally simplified so the page stays focused on execution rather than explanation.
 
 ## Build and Run
+
 From repository root:
 
 ```bash
@@ -122,7 +154,11 @@ Default port:
 - `8080`
 
 ## Current Limitations
-- No persistence (data is lost on restart).
-- Concurrency model is synchronized at engine level (`DbmsCliEngine` methods are synchronized).
-- Pagination is not implemented yet for table results.
-- Only equality operator (`=`) is currently implemented for WHERE conditions.
+- append-only persistence
+- current page flushed on each insert
+- no deleted-row reuse yet
+- no compaction
+- no buffer pool beyond the current page
+- no indexing or WAL
+- no pagination in the frontend yet
+- only equality operator (`=`) is implemented for `WHERE`

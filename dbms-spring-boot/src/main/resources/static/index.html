@@ -11,11 +11,7 @@
     <header class="page-header">
         <div>
             <h1>MiniSQL Workbench</h1>
-            <p class="subtitle">Write SQL on the left. Results and errors appear on the right.</p>
-        </div>
-        <div class="quick-notes">
-            <span class="note-chip">`SELECT` tables render as HTML tables</span>
-            <span class="note-chip">Errors are highlighted in red</span>
+            <p class="subtitle">Run SQL and inspect the result.</p>
         </div>
     </header>
 
@@ -23,35 +19,32 @@
         <div class="panel editor-panel">
             <div class="panel-header">
                 <div>
-                    <p class="panel-label">Query Editor</p>
-                    <h2>SQL Input</h2>
+                    <p class="panel-label">Editor</p>
+                    <h2>SQL</h2>
                 </div>
                 <div class="panel-actions">
-                    <button id="runButton" class="primary" type="button">Run Query</button>
-                    <button id="resetButton" class="secondary" type="button">Reset Catalog</button>
+                    <button id="runButton" class="primary" type="button">Run</button>
+                    <button id="resetButton" class="secondary" type="button">Reload Catalog</button>
                 </div>
             </div>
             <label class="editor-frame" for="sqlInput">
                 <span class="editor-title">query.sql</span>
-                <textarea id="sqlInput" spellcheck="false">CREATE TABLE student (name STRING, age INT, marks INT);
-INSERT INTO student ('aryan', 54, 78);
-INSERT INTO student ('aryan', 54, 85);
-SELECT * FROM student;</textarea>
+                <textarea id="sqlInput" spellcheck="false">SELECT * FROM student;</textarea>
             </label>
         </div>
 
         <div class="panel output-panel">
             <div class="panel-header">
                 <div>
-                    <p class="panel-label">Results</p>
-                    <h2>Execution Output</h2>
+                    <p class="panel-label">Output</p>
+                    <h2>Result</h2>
                 </div>
                 <span id="statusBadge" class="status-badge idle">Idle</span>
             </div>
             <div id="outputArea" class="output-body muted">
                 <div class="empty-state">
                     <h3>No result yet</h3>
-                    <p>Run a statement to view text output, errors, or rendered table results.</p>
+                    <p>Run a query to see output.</p>
                 </div>
             </div>
         </div>
