@@ -16,6 +16,7 @@ The important change is that `Catalog` and `Table` are now backed by on-disk per
 - `SELECT` now streams records through `TableIterator`
 - `CREATE TABLE` writes `schema.txt`
 - `DROP TABLE` deletes the table directory
+- `INSERT` now exposes a physical row reference internally as `(pageId, rowOffset)`
 
 ### Spring Boot side
 - `DbmsCliEngine` now works against a persistence-backed catalog
@@ -30,8 +31,9 @@ The persistence package lives under:
 
 Main classes:
 - `Page`
-- `RowSerializer`
 - `PageManager`
+- `RowPointer`
+- `RowSerializer`
 - `TableIterator`
 
 Full storage documentation:
@@ -53,6 +55,7 @@ Notes:
 - `schema.txt` stores the ordered schema used by row serialization
 - each `page_<id>.dat` file is one fixed 4 KB page
 - inserts are append-only into the last page
+- insert-time row references are available for future index structures
 
 ## Statement Integration
 
@@ -67,6 +70,7 @@ Notes:
 - builds a logical `Record`
 - serializes the row
 - inserts and flushes it through `PageManager`
+- produces a `RowPointer` internally for future index use
 
 ### SELECT
 - scans with `TableIterator`

@@ -8,6 +8,7 @@ It is responsible for:
 - storing table rows in page files
 - converting logical records to bytes and back
 - managing the last writable page of a table
+- exposing physical row references for future indexing
 - scanning rows page-by-page for query execution
 
 ## Package Role in Architecture
@@ -23,8 +24,9 @@ The package sits below the logical table abstraction and above the filesystem.
 
 ## Classes
 - [Page](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/Page.md)
-- [RowSerializer](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/RowSerializer.md)
 - [PageManager](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/PageManager.md)
+- [RowPointer](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/RowPointer.md)
+- [RowSerializer](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/RowSerializer.md)
 - [TableIterator](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/TableIterator.md)
 
 ## Package Workflow
@@ -35,6 +37,7 @@ Record
 -> RowSerializer.serialize()
 -> PageManager.insertRow()
 -> Page.insertRow()
+-> RowPointer(pageId, rowOffset)
 -> page_<id>.dat
 ```
 

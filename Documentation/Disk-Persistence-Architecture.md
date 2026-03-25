@@ -41,6 +41,7 @@ The parser and AST design remain the same. The major change is below `Table`.
 - `SELECT` now streams rows using `TableIterator`.
 - `CREATE TABLE` persists schema.
 - `DROP TABLE` removes the on-disk table directory.
+- `INSERT` now returns a physical row reference internally as `(pageId, rowOffset)` for future index structures.
 
 ## Storage Layout
 
@@ -74,16 +75,18 @@ Each page file stores one fixed-size 4 KB page.
 ```text
 DBMS-CLI/src/main/java/disk_persistence/
   Page.java
-  RowSerializer.java
   PageManager.java
+  RowPointer.java
+  RowSerializer.java
   TableIterator.java
 ```
 
 Subdocuments:
 - [disk_persistence Package Overview](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/README.md)
 - [Page](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/Page.md)
-- [RowSerializer](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/RowSerializer.md)
 - [PageManager](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/PageManager.md)
+- [RowPointer](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/RowPointer.md)
+- [RowSerializer](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/RowSerializer.md)
 - [TableIterator](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/TableIterator.md)
 
 ## Statement-Level Behavior
@@ -104,6 +107,7 @@ InsertIntoStatement
 -> build Record
 -> RowSerializer.serialize(...)
 -> PageManager.insertRow(...)
+-> RowPointer(pageId, rowOffset)
 -> flush current page to disk
 ```
 
@@ -138,6 +142,9 @@ Page files store rows compactly and do not repeat column names. `schema.txt` giv
 ### Why iterator-based SELECT?
 This avoids loading every row into memory before filtering. It also matches the long-term direction of page-by-page scans.
 
+### Why add RowPointer now?
+The page id and row offset are already known at insert time. Exposing them now creates a clean future seam for B-tree leaf references without forcing index implementation yet.
+
 ## Current Limitations
 - append-only inserts
 - current page flushed on each insert
@@ -152,4 +159,5 @@ This avoids loading every row into memory before filtering. It also matches the 
 1. Support deleted-row skipping using the row deleted flag.
 2. Add free-space reuse or compaction.
 3. Add better page discovery/caching inside `PageManager`.
-4. Separate “reload catalog” and “wipe persisted data” as distinct admin operations.
+4. Use `RowPointer` as the reference payload for index entries.
+5. Separate “reload catalog” and “wipe persisted data” as distinct admin operations.

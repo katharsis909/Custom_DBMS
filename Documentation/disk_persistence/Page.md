@@ -29,6 +29,11 @@ It stores:
 - `getData()`
 - `loadData(byte[] bytes)`
 
+## Insert Return Value
+`insertRow(...)` now returns the inserted row's starting offset inside the page.
+
+That offset is the physical row location later paired with `pageId` to form a `RowPointer`.
+
 ## Why It Exists
 Without `Page`, rows would either stay in memory or require ad hoc file writes. `Page` gives a predictable and compact physical unit that `PageManager` can persist directly.
 

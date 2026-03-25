@@ -1,6 +1,7 @@
 package STRUCTURE;
 
 import disk_persistence.PageManager;
+import disk_persistence.RowPointer;
 import disk_persistence.RowSerializer;
 import disk_persistence.TableIterator;
 
@@ -41,7 +42,11 @@ public class Table {
         return table_name;
     }
 
-    public void addRecord(List<DBMSDataType> values) throws DBMSException {
+    /**
+     * Existing SQL insert path still calls this method. It now returns the
+     * physical row pointer, but callers may ignore it until indexing is added.
+     */
+    public RowPointer addRecord(List<DBMSDataType> values) throws DBMSException {
         if (values.size() != columnList.size()) {
             throw new DBMSException("Column count mismatch. Expected " + columnList.size() + " but got " + values.size());
         }
@@ -57,12 +62,12 @@ public class Table {
             record.setValue(column.getColumnName(), value);
         }
 
-        insertRecord(record);
+        return insertRecord(record);
     }
 
-    public void insertRecord(Record record) throws DBMSException {
+    public RowPointer insertRecord(Record record) throws DBMSException {
         byte[] rowBytes = RowSerializer.serialize(record, this);
-        pageManager.insertRow(rowBytes);
+        return pageManager.insertRow(rowBytes);
     }
 
     public TableIterator iterator() throws DBMSException {

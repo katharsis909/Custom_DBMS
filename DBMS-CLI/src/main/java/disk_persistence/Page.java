@@ -39,7 +39,11 @@ public class Page {
         return freePtr + 2 <= dataPtr - rowSize;
     }
 
-    public void insertRow(byte[] row) {
+    /**
+     * Insert logic: write the row at the new back-growing data pointer and
+     * return that physical offset so higher layers can keep an index reference.
+     */
+    public int insertRow(byte[] row) {
         int rowSize = row.length;
         if (!hasSpace(rowSize)) {
             throw new IllegalStateException("Not enough space in page " + getPageId());
@@ -53,6 +57,7 @@ public class Page {
         setShort(DATA_PTR_OFFSET, newDataPtr);
         setShort(FREE_PTR_OFFSET, getFreePtr() + 2);
         setShort(ROW_COUNT_OFFSET, getRowCount() + 1);
+        return newDataPtr;
     }
 
     public byte[] getRow(int slotIndex) {

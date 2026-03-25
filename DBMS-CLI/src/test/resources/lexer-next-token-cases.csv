@@ -1,0 +1,13 @@
+case_name,input,expected_types,expected_lexemes,expected_exception_message,notes
+"simple select statement","SELECT name FROM students;","SELECT|IDENTIFIER|FROM|IDENTIFIER|SEMICOLON|EOF","SELECT|name|FROM|students|;|","","Basic keyword, identifier, symbol, and EOF flow."
+"keyword matching is case insensitive","select Name from Students;","SELECT|IDENTIFIER|FROM|IDENTIFIER|SEMICOLON|EOF","select|Name|from|Students|;|","","Keywords should still be recognized even in lowercase or mixed case."
+"whitespace and newlines are skipped"," \tINSERT\nINTO students VALUES","INSERT|INTO|IDENTIFIER|IDENTIFIER|EOF","INSERT|INTO|students|VALUES|","","Leading spaces, tabs, and newlines should not break tokenization."
+"underscore identifier and numeric literal","_temp1 = 123","IDENTIFIER|EQUAL|NUMERIC_LITERAL|EOF","_temp1|=|123|","","Identifiers may start with underscore and numbers should tokenize cleanly."
+"string literal with spaces","'hello world'","STRING_LITERAL|EOF","hello world|","","Quoted text should become a string literal without quote characters."
+"symbols without spaces","(name,age)=*;","LPAREN|IDENTIFIER|COMMA|IDENTIFIER|RPAREN|EQUAL|STAR|SEMICOLON|EOF","(|name|,|age|)|=|*|;|","","Single-character tokens should work even when packed together."
+"repeated semicolons",";;","SEMICOLON|SEMICOLON|EOF",";|;|","","Back-to-back symbol tokens should be returned one by one."
+"invalid identifier with special character","abc$def","INVALID|EOF","abc$def|","","A bad character inside an identifier should produce INVALID instead of an exception."
+"invalid numeric literal with letters","123abc","INVALID|EOF","123abc|","","A number immediately followed by letters should become INVALID."
+"unterminated string literal","'hello","INVALID|EOF","Unterminated string: 'hello|","","Missing closing quote should return INVALID."
+"standalone unknown character throws exception","@","","","INVALID token","A completely unsupported character should throw LexerException right away."
+"empty input returns eof","","EOF","<EMPTY>","","No tokens other than EOF should be returned for empty input."

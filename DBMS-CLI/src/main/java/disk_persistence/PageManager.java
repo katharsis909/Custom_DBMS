@@ -28,15 +28,20 @@ public class PageManager {
         }
     }
 
-    public synchronized void insertRow(byte[] row) throws DBMSException {
+    /**
+     * Insert path: select the writable page, insert the row, flush it, and
+     * return the physical page/offset reference for future index structures.
+     */
+    public synchronized RowPointer insertRow(byte[] row) throws DBMSException {
         if (!currentPage.hasSpace(row.length)) {
             flushCurrentPage();
             currentPageId++;
             currentPage = new Page(currentPageId);
         }
 
-        currentPage.insertRow(row);
+        int rowOffset = currentPage.insertRow(row);
         flushCurrentPage();
+        return new RowPointer(currentPageId, rowOffset);
     }
 
     public synchronized Page loadPage(int pageId) throws DBMSException {

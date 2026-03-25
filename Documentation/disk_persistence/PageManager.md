@@ -8,6 +8,7 @@ It owns:
 - the table directory
 - the current writable page
 - page flushing and page loading
+- physical row reference creation at insert time
 
 ## Current Design
 - only the current page is kept in memory
@@ -20,6 +21,15 @@ It owns:
 - `loadPage(int pageId)`
 - `flushCurrentPage()`
 - `getCurrentPageId()`
+
+## Insert Return Value
+`insertRow(...)` now returns a `RowPointer`.
+
+That object contains:
+- `pageId`
+- `rowOffset`
+
+This gives higher layers a ready-made physical reference for future B-tree or other secondary index structures.
 
 ## Disk Contract
 The manager writes files under:

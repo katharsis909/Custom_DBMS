@@ -14,6 +14,7 @@ This repository contains a custom MiniSQL DBMS engine and a Spring Boot API wrap
   - static browser workbench served at `/`
 - `Documentation/`
   - architecture and integration notes
+  - lexer testing notes in `Documentation/Lexer-Testing.md`
 - `pom.xml`
   - parent Maven multi-module build file
 
@@ -30,6 +31,7 @@ Current engine capabilities:
 - persisted schema in `schema.txt`
 - fixed-size `4096` byte page files
 - streaming table scans through a page iterator
+- physical row references available at insert time as `(pageId, rowOffset)`
 - shared line-aware error formatting for CLI and Spring Boot
 - structured query results for the web layer
 
@@ -39,6 +41,7 @@ Current engine capabilities:
 - catalog startup now reloads persisted tables from disk
 - restart no longer loses tables and inserted rows
 - `SELECT` now reads through persisted page scans instead of an in-memory record list
+- inserts now expose a physical row reference internally for future index work
 - line-aware errors continue to work as before
 
 ### Spring Boot
@@ -63,6 +66,9 @@ data/
 Top-down persistence documentation:
 - [Disk Persistence Architecture](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/Disk-Persistence-Architecture.md)
 - [disk_persistence Package](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/README.md)
+
+Testing documentation:
+- [Lexer Testing](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/Lexer-Testing.md)
 
 ## Spring Boot API
 
@@ -117,6 +123,7 @@ Open this folder in BlueJ:
 
 - persisted table data is stored locally under `data/`
 - `SELECT` now streams rows from persisted pages
+- inserts now have a minimal future index seam through `RowPointer`
 - persistence is currently append-only
 - there is no delete reuse, compaction, indexing, or crash recovery yet
 - this project still favors educational clarity over production DB features
