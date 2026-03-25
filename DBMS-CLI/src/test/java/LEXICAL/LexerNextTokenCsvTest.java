@@ -18,14 +18,19 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class LexerNextTokenCsvTest {
 
+    // JUnit runs this same method once per CSV row.
+    // "{index}" shows the test number and "{0}" shows the first argument,
+    // which is caseName, so test output is easier to read.
     @ParameterizedTest(name = "{index}. {0}")
     @MethodSource("csvCases")
     void shouldTokenizeInputAsExpected(
+            // A human-readable title for one CSV test case.
             String caseName,
             String input,
             List<String> expectedTypes,
             List<String> expectedLexemes,
             String expectedExceptionMessage,
+            // Extra context from the CSV that is only used in failure messages.
             String notes) {
 
         // These lists store the full output stream produced by repeated
@@ -51,17 +56,26 @@ class LexerNextTokenCsvTest {
             thrown = ex;
         }
 
+        // assertEquals(expected, actual, message) compares the two values and
+        // prints the custom message only if they do not match.
         assertEquals(expectedTypes, actualTypes, caseName + " token types mismatch. " + notes);
         assertEquals(expectedLexemes, actualLexemes, caseName + " lexemes mismatch. " + notes);
 
+        // A blank expectedExceptionMessage means this case should finish
+        // normally, with no LexerException at all.
         if (expectedExceptionMessage.isBlank()) {
             if (thrown != null) {
+                // fail(...) immediately marks the test as failed with a
+                // readable explanation when something unexpected happens.
                 fail(caseName + " unexpectedly threw LexerException: " + thrown.getMessage());
             }
         } else {
+            // Non-blank means an exception is expected for this input.
             if (thrown == null) {
                 fail(caseName + " should have thrown LexerException. " + notes);
             }
+            // If an exception was expected, also verify that the message is
+            // the exact one we described in the CSV.
             assertEquals(expectedExceptionMessage, thrown.getMessage(), caseName + " exception message mismatch.");
         }
     }
