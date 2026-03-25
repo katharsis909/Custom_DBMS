@@ -14,7 +14,7 @@ This repository contains a custom MiniSQL DBMS engine and a Spring Boot API wrap
   - static browser workbench served at `/`
 - `Documentation/`
   - architecture and integration notes
-  - lexer testing notes in `Documentation/Lexer-Testing.md`
+  - testing notes in `Documentation/Testing.md`
 - `pom.xml`
   - parent Maven multi-module build file
 
@@ -68,7 +68,7 @@ Top-down persistence documentation:
 - [disk_persistence Package](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/README.md)
 
 Testing documentation:
-- [Lexer Testing](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/Lexer-Testing.md)
+- [Testing](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/Testing.md)
 
 ## Spring Boot API
 
