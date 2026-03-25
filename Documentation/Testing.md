@@ -39,6 +39,43 @@ Why this test exists:
 - it keeps many scenarios in one small CSV file
 - it is easy to extend while learning JUnit
 
+### ParserContext Testing
+
+The current parser-context unit testing is focused on `ParserContext` alone.
+
+Files:
+- `DBMS-CLI/src/test/java/SEMANTIC/PARSER/util/ParserContextCsvTest.java`
+- `DBMS-CLI/src/test/resources/parser-context-cases.csv`
+
+What this testing does:
+- reads one CSV row as one parser-context scenario
+- uses Mockito to mock `Lexer`
+- scripts the mocked `nextToken()` calls from the CSV
+- checks `current()`, `advance()`, `expect(...)`, `isAtEnd()`, `error()`, and `errorAt()`
+- verifies both `ParseException` and `LexerException` paths
+
+What is covered:
+- constructor loading the first token
+- advancing to the next token
+- successful `expect(...)`
+- failing `expect(...)`
+- `isAtEnd()` for normal tokens and `EOF`
+- `error()` using current token position
+- `errorAt()` using explicit position
+- lexer exception propagation from constructor
+- lexer exception propagation from `advance()`
+- lexer exception propagation from `expect(...)`
+
+Why this test exists:
+- it isolates `ParserContext` from real lexer behavior
+- it checks parser state changes one step at a time
+- it keeps many small context scenarios in one CSV file
+
+Runtime note:
+- Mockito-based lexer mocking was verified under Java 17
+- Java 24 caused local mocking/tooling issues in this environment
+- local development should use Java 17 for this project
+
 ## Running Tests
 
 From the repository root:
@@ -63,3 +100,10 @@ For lexer testing:
 - add an exception message only if an exception is expected
 
 Use `<EMPTY>` when an expected lexeme is an empty string, such as for `EOF`.
+
+For parser-context testing:
+- add a new row to `parser-context-cases.csv`
+- describe the mocked lexer token stream in `lexer_steps`
+- choose the `ParserContext` operation to run
+- fill only the expected result fields that matter for that scenario
+- add notes so failure messages stay readable
