@@ -26,6 +26,7 @@ public class CreateTableStatement extends Statement {
         this.columns = columns;
     }
 
+    // Executes CREATE TABLE by converting AST column definitions into schema columns and registering the table in the catalog.
     public QueryResultBlock execute(Catalog db) throws DBMSException {
         try {
             db.addTable(getTableName().getName(), Main.toColumnListFromDefinition(getColumns().getColumnList()));

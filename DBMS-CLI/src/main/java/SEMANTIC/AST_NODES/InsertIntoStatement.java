@@ -30,6 +30,7 @@ public class InsertIntoStatement extends Statement {
         this.valueList = valueList;
     }
 
+    // Executes INSERT by resolving the target table, validating AST values against the schema, and appending one record.
     public QueryResultBlock execute(Catalog catalog) throws DBMSException {
         try {
             Table table = catalog.getTable(getTableName().getName());

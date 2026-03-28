@@ -10,8 +10,10 @@ public abstract class Statement
 {
     private int sourcePosition = -1;
 
+    // Executes the statement logic and returns structured output for callers that want to render or combine results.
     public abstract QueryResultBlock execute(Catalog catalog) throws DBMSException;
 
+    // Convenience entry point for interactive use: execute the statement and print any non-empty result block.
     public void evaluate(Catalog catalog) throws DBMSException {
         QueryResultBlock result = execute(catalog);
         if (result != null && !result.isEmpty()) {

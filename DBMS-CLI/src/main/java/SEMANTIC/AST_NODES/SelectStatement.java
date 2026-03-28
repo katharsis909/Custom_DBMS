@@ -41,6 +41,7 @@ public class SelectStatement extends Statement {
         this.whereClause = whereClause;
     }
 
+    // Executes SELECT by scanning the table, applying the optional WHERE clause, and returning the matching rows as a result table.
     public QueryResultBlock execute(Catalog db) throws DBMSException {
         try {
             Table table = db.getTable(getTableName().getName());

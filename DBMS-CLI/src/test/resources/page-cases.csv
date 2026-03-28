@@ -1,0 +1,8 @@
+case_name,operation,page_id,row_payloads,slot_index,probe_size,load_length,expected_page_id,expected_row_count,expected_has_space,expected_row_text,expected_exception_type,expected_exception_message,notes
+"new page starts empty","init","3","","","1","","3","0","true","","","","A fresh page should expose its page id, zero rows, and available space for a small row."
+"insert single row and read it back","insert_and_read","5","hello","0","","","5","1","","hello","","","Inserted bytes should be readable again from slot 0."
+"insert multiple rows preserves slot order","insert_and_read","7","first|second","1","","","7","2","","second","","","Later inserts should use higher slot indexes while keeping row contents intact."
+"invalid slot index is rejected","invalid_slot","9","alpha","1","","","9","1","","","IllegalArgumentException","Invalid slot index 1","Out-of-range slot access should fail fast instead of returning garbage."
+"loadData rejects wrong page size","load_wrong_size","11","","","","128","11","0","","","IllegalArgumentException","Page data must be exactly 4096 bytes","Page.loadData should reject corrupt or partial page images."
+"page reports no space after a maximal row","full_page_probe","13","","","1","","13","1","false","","","","A fully packed page should report no remaining space for even a 1-byte row. This guards future page-layout changes."
+"page insert fails when row cannot fit","insert_too_large","15","","","4081","","15","0","","","IllegalStateException","Not enough space in page 15","Oversized rows are still rejected at the page layer; future overflow handling belongs above Page."

@@ -76,6 +76,139 @@ Runtime note:
 - Java 24 caused local mocking/tooling issues in this environment
 - local development should use Java 17 for this project
 
+### Parser Unit Tests
+
+Most parser classes now follow one shared unit-testing pattern.
+
+Files:
+- `DBMS-CLI/src/test/java/SEMANTIC/PARSER/BasicElementParserTest.java`
+- `DBMS-CLI/src/test/java/SEMANTIC/PARSER/CollectionParserTest.java`
+- `DBMS-CLI/src/test/java/SEMANTIC/PARSER/StatementBodyParserTest.java`
+- `DBMS-CLI/src/test/java/SEMANTIC/PARSER/StatementParserTest.java`
+- `DBMS-CLI/src/test/java/SEMANTIC/PARSER/StatementListParserTest.java`
+
+Shared approach:
+- mock `ParserContext`
+- use Mockito static mocking for child parser calls where needed
+- return real AST objects or concrete mocked AST nodes
+- verify only the parser’s own responsibility: routing, loop control, field assignment, or error creation
+
+One example:
+- `ColumnDefinitionParser` does not need a real SQL string
+- the test mocks `IdentifierParser.parse(ctx)` and `DataTypeParser.parse(ctx)`
+- then it checks that the resulting `ColumnDefinition` stores those exact objects
+
+Covered parser groups:
+- leaf/simple parsers such as `IdentifierParser`, `LiteralParser`, `DataTypeParser`, `OperatorParser`, `WhereClauseParser`
+- composed element parsers such as `ColumnDefinitionParser`, `ColumnMentionParser`, `ValueParser`, `UnaryConditionParser`
+- list parsers such as `ColumnDefinitionListParser`, `ConditionListParser`, `ValueListParser`, `SelectedColumnListParser`
+- statement body parsers such as `CreateTableStatementParser`, `DropTableStatementParser`, `InsertIntoStatementParser`, `SelectStatementParser`
+- top-level coordinators such as `StatementParser` and `StatementListParser`
+
+Outliers:
+- `ParserContext` is tested with a CSV-driven mocked lexer because it is stateful and step-based
+- `LiteralParser` needs separate branch tests for string, numeric, and invalid tokens
+- `SelectedColumnListParser` needs separate tests for `*` and explicit column lists
+- `SelectStatementParser` needs separate tests for with-`WHERE` and without-`WHERE`
+- `StatementListParser` is best tested with a few direct control-flow cases instead of a CSV file
+- `CreateTableStatementParser` is still a direct unit test for local guard clauses such as missing keywords or parentheses
+
+### AST Node Unit Tests
+
+The AST model layer now follows one shared unit-testing pattern too.
+
+File:
+- `DBMS-CLI/src/test/java/SEMANTIC/AST_NODES/AstNodeTest.java`
+
+Shared approach:
+- keep the tests at AST-node level instead of driving them through full SQL parsing
+- use real leaf/value objects for simple state and evaluation behavior
+- use Mockito for collaborators such as `Catalog`, `Table`, `TableIterator`, `ConditionList`, `SelectedColumnList`, and `ValueList`
+- verify only the node’s own responsibility: storing fields, delegating to collaborators, building result rows, or attaching source positions to errors
+
+One example:
+- `InsertIntoStatement` does not need a real parser or database directory
+- the test mocks `Catalog`, `Table`, and `ValueList`
+- then it checks that the statement fetches the table, evaluates values against the table schema, and passes the evaluated row to `table.addRecord(...)`
+
+Covered node groups:
+- leaf and metadata nodes such as `Identifier`, `DataType`, `Operator`, `NumericLiteral`, `StringLiteral`
+- structural nodes such as `ColumnDefinition`, `ColumnDefinitionList`, `Value`, `ValueList`, `ConditionList`, `WhereClause`, `SelectedColumnList`
+- record-reading nodes such as `ColumnMention` and `UnaryCondition`
+- executable statement nodes such as `CreateTableStatement`, `DropTableStatement`, `InsertIntoStatement`, `SelectStatement`, `Statement`, `StatementList`
+
+Outliers:
+- `CreateTableStatement` uses a static converter helper, so the test statically mocks `Converter.Main.toColumnListFromDefinition(...)`
+- `SelectStatement` needs mocked `TableIterator` behavior because it owns row filtering, row-to-string conversion, and header construction
+- `Statement.evaluate(...)` is one of the few AST tests that captures `System.out`, because its observable behavior is printed output rather than returned data
+
+### Persistence Unit Tests
+
+The disk-persistence layer now uses a mixed testing strategy: CSV for compact data-shape scenarios and Mockito for collaborator-heavy iterator behavior.
+
+Files:
+- `DBMS-CLI/src/test/java/disk_persistence/PageCsvTest.java`
+- `DBMS-CLI/src/test/java/disk_persistence/RowSerializerCsvTest.java`
+- `DBMS-CLI/src/test/java/disk_persistence/PageManagerTest.java`
+- `DBMS-CLI/src/test/java/disk_persistence/TableIteratorTest.java`
+- `DBMS-CLI/src/test/java/disk_persistence/RowPointerTest.java`
+- `DBMS-CLI/src/test/resources/page-cases.csv`
+- `DBMS-CLI/src/test/resources/row-serializer-cases.csv`
+
+Shared approach:
+- use CSV rows for compact page-layout and row-encoding scenarios where the inputs and outputs are mostly data
+- use Mockito where a class is mainly coordinating with collaborators, especially `TableIterator` and mocked `Table` schemas
+- use real filesystem IO only for `PageManager`, because its job is exactly disk-backed page lifecycle behavior
+- keep each test focused on one responsibility: page slot behavior, row encoding rules, iterator page traversal, page-manager flushing, or pointer metadata
+
+One example:
+- `RowSerializer` does not need a real table on disk
+- the test mocks `Table.getColumnList()` to provide a schema
+- then one CSV row can describe a full serialize/deserialize round trip, an unsupported type, or a known future gap such as the currently ignored deleted flag
+
+Covered persistence classes:
+- `Page`
+- `PageManager`
+- `RowPointer`
+- `RowSerializer`
+- `TableIterator`
+
+Outliers:
+- `PageManager` uses real temporary table directories under `data/` because mocking file IO would miss the behavior we care about
+- `TableIterator` uses static mocking of `RowSerializer.deserialize(...)` so the test stays focused on page traversal rather than row decoding internals
+- some CSV rows intentionally describe future-facing gaps, such as unsupported column types, fixed string-size limits, and the currently ignored deleted-row flag
+
+### Statement Benchmarks
+
+The project now also has JMH benchmarks for statement execution costs.
+
+Files:
+- `DBMS-CLI/src/test/java/benchmark/StatementBenchmark.java`
+- `DBMS-CLI/src/test/java/benchmark/StatementBenchmarkRunner.java`
+
+What is benchmarked:
+- `insert100Rows`
+- `selectAll`
+- `selectSingleColumn`
+- `selectWhereSingleMatch`
+- `selectWhereNoMatch`
+
+Dataset sizes:
+- insert benchmark runs `100` inserts per benchmark invocation
+- select benchmarks run against `10_000` and `100_000` preloaded rows
+
+Run command:
+
+```bash
+mvn -q -DskipTests test-compile exec:java \
+  -Dexec.classpathScope=test \
+  -Dexec.mainClass=benchmark.StatementBenchmarkRunner
+```
+
+Benchmark note:
+- the Maven runner is configured to use non-forked JMH runs so it works directly from the test classpath
+- that is convenient for local comparison, but forked standalone runs are still better when you want more rigorous numbers
+
 ## Running Tests
 
 From the repository root:
@@ -107,3 +240,23 @@ For parser-context testing:
 - choose the `ParserContext` operation to run
 - fill only the expected result fields that matter for that scenario
 - add notes so failure messages stay readable
+
+For parser unit testing:
+- add another direct JUnit test method when a parser gets a new branch or delegated child parser
+- keep each test focused on one parser responsibility
+- only add separate tests for real outliers such as optional branches, list loops, or special error formatting
+
+For AST node unit testing:
+- add another direct JUnit test method when a node gains new local behavior or error handling
+- prefer real AST/value objects for simple nodes and Mockito only at collaborator boundaries
+- document only the unusual cases in this file, not every getter/setter test individually
+
+For persistence testing:
+- add a new CSV row when a page or serializer scenario is mostly data-driven
+- add a direct JUnit test when disk behavior, iterator control flow, or collaborator wiring is the real thing being verified
+- keep future-gap cases explicit in the CSV notes so unsupported behavior is documented on purpose
+
+For statement benchmarks:
+- add a new benchmark method when you want to compare a distinct execution shape, not just another correctness branch
+- keep benchmark setup out of the timed method unless setup cost is part of the thing you want to measure
+- treat the numbers as comparative signals, not hard pass/fail thresholds

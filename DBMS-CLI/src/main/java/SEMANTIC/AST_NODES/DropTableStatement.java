@@ -17,6 +17,7 @@ public class DropTableStatement extends Statement
         this.tableName = tableName;
     }
 
+    // Executes DROP TABLE by removing the named table from the catalog and underlying storage.
     public QueryResultBlock execute(Catalog catalog) throws DBMSException {
         try {
             String name = tableName.getName();

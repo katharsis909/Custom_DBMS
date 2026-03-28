@@ -24,6 +24,7 @@ public class StatementList {
         this.statements = statements;
     }
 
+    // Evaluates each statement in order and lets each one print its own interactive output, if any.
     public void evaluate(Catalog db) throws DBMSException {
         //String log = "empty_for_now";
         for (Statement statement : getStatements()) {
@@ -32,6 +33,7 @@ public class StatementList {
         //return log;
     }
 
+    // Executes each statement in order and collects all non-empty result blocks into one aggregate execution result.
     public ExecutionResult execute(Catalog db) throws DBMSException {
         ExecutionResult result = new ExecutionResult();
         for (Statement statement : getStatements()) {
