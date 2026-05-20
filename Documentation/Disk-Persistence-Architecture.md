@@ -97,6 +97,7 @@ CreateTableStatement
 -> Catalog.addTable(...)
 -> new Table(tableName, schema)
 -> write schema.txt
+-> initialize primary_key_index when a primary key exists
 -> create/load PageManager
 ```
 
@@ -105,9 +106,11 @@ CreateTableStatement
 InsertIntoStatement
 -> Table.addRecord(...)
 -> build Record
+-> validate primary-key values are non-empty and unique through B+ tree lookup
 -> RowSerializer.serialize(...)
 -> PageManager.insertRow(...)
 -> RowPointer(pageId, rowOffset)
+-> insert primary-key value into B+ tree index
 -> flush current page to disk
 ```
 

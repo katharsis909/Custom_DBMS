@@ -11,7 +11,7 @@ public class Main {
     {
         String columnName = columnDefinition.getColumnName().getName();
         String columnType = columnDefinition.getDataType().getDataType();
-        return  new Column(columnName, columnType);
+        return  new Column(columnName, columnType, columnDefinition.isPrimaryKey());
     }
 
     public static List<Column> toColumnListFromDefinition(List<ColumnDefinition> columnDefs) {

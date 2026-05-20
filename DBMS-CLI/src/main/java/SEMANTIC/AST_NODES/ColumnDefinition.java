@@ -5,6 +5,7 @@ import SEMANTIC.AST_NODES.LEAF_NODES.Identifier;
 public class ColumnDefinition {
     private Identifier columnName;
     private DataType dataType; // "INT" or "STRING"
+    private boolean primaryKey;
 
     public Identifier getColumnName() {
         return columnName;
@@ -21,6 +22,15 @@ public class ColumnDefinition {
     public void setDataType(DataType dataType) {
         this.dataType = dataType;
     }
+
+    public boolean isPrimaryKey() {
+        return primaryKey;
+    }
+
+    public void setPrimaryKey(boolean primaryKey) {
+        this.primaryKey = primaryKey;
+    }
+
     public String getColumnDataType() {
         return getDataType().getDataType();
     }

@@ -4,6 +4,9 @@ import disk_persistence.PageManager;
 import disk_persistence.RowPointer;
 import disk_persistence.RowSerializer;
 import disk_persistence.TableIterator;
+import indexing.bplustree.BPlusTree;
+import indexing.bplustree.BPlusTreeDiskStore;
+import indexing.bplustree.BPlusTreeSerializers;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -11,6 +14,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +23,7 @@ public class Table {
     private final List<Column> columnList;
     private final String table_name;
     private final PageManager pageManager;
+    private final BPlusTreeDiskStore<String, RowPointer> primaryKeyIndex;
 
     public Table(String tableName, List<Column> schema) throws DBMSException {
         this.table_name = tableName;
@@ -25,6 +31,8 @@ public class Table {
         ensureTableDirectory();
         writeSchema(tableName, schema);
         this.pageManager = new PageManager(tableName);
+        this.primaryKeyIndex = createPrimaryKeyIndex(tableName);
+        initializePrimaryKeyIndex();
     }
 
     public Table(String tableName) throws DBMSException {
@@ -32,10 +40,22 @@ public class Table {
         ensureTableDirectory();
         this.columnList = loadSchema(new File("data", tableName));
         this.pageManager = new PageManager(tableName);
+        this.primaryKeyIndex = createPrimaryKeyIndex(tableName);
+        initializePrimaryKeyIndex();
     }
 
     public List<Column> getColumnList() {
         return new ArrayList<>(columnList);
+    }
+
+    public List<String> getPrimaryKeyColumns() {
+        List<String> primaryKeyColumns = new ArrayList<>();
+        for (Column column : columnList) {
+            if (column.isPrimaryKey()) {
+                primaryKeyColumns.add(column.getColumnName());
+            }
+        }
+        return primaryKeyColumns;
     }
 
     public String getTable_name() {
@@ -55,6 +75,12 @@ public class Table {
         for (int i = 0; i < values.size(); i++) {
             Column column = columnList.get(i);
             DBMSDataType value = values.get(i);
+            if (value == null) {
+                if (column.isPrimaryKey()) {
+                    throw new DBMSException("Primary key column '" + column.getColumnName() + "' must be non-null and non-empty.");
+                }
+                throw new DBMSException("Column '" + column.getColumnName() + "' must not be null.");
+            }
             if (!value.typeEquals(column.getColumn_type())) {
                 throw new DBMSException("Type mismatch at column " + column.getColumnName()
                         + ". Expected " + column.getColumn_type() + " but got " + value.getType());
@@ -66,8 +92,17 @@ public class Table {
     }
 
     public RowPointer insertRecord(Record record) throws DBMSException {
+        String primaryKey = primaryKeyForRecord(record);
+        if (primaryKey != null && !primaryKeyIndex.search(primaryKey).isEmpty()) {
+            throw new DBMSException("Duplicate primary key value.");
+        }
+
         byte[] rowBytes = RowSerializer.serialize(record, this);
-        return pageManager.insertRow(rowBytes);
+        RowPointer rowPointer = pageManager.insertRow(rowBytes);
+        if (primaryKey != null) {
+            primaryKeyIndex.insert(primaryKey, rowPointer);
+        }
+        return rowPointer;
     }
 
     public TableIterator iterator() throws DBMSException {
@@ -104,6 +139,9 @@ public class Table {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             for (Column column : schema) {
                 writer.write(column.getColumnName() + " " + column.getColumn_type());
+                if (column.isPrimaryKey()) {
+                    writer.write(" PRIMARY_KEY");
+                }
                 writer.newLine();
             }
         } catch (IOException e) {
@@ -126,10 +164,11 @@ public class Table {
                     continue;
                 }
                 String[] parts = trimmed.split("\\s+");
-                if (parts.length != 2) {
+                if (parts.length != 2 && parts.length != 3) {
                     throw new DBMSException("Invalid schema entry in table '" + table_name + "': " + line);
                 }
-                columns.add(new Column(parts[0], parts[1]));
+                boolean primaryKey = parts.length == 3 && parts[2].equals("PRIMARY_KEY");
+                columns.add(new Column(parts[0], parts[1], primaryKey));
             }
         } catch (IOException e) {
             throw new DBMSException("Could not load schema for table '" + table_name + "'.", e);
@@ -143,5 +182,47 @@ public class Table {
         if (!dir.exists() && !dir.mkdirs()) {
             throw new DBMSException("Could not create table directory for '" + table_name + "'.");
         }
+    }
+
+    private BPlusTreeDiskStore<String, RowPointer> createPrimaryKeyIndex(String tableName) {
+        Path indexDirectory = Path.of("data", tableName, "primary_key_index");
+        return new BPlusTreeDiskStore<>(
+                indexDirectory,
+                BPlusTreeSerializers.strings(),
+                BPlusTreeSerializers.rowPointers()
+        );
+    }
+
+    private void initializePrimaryKeyIndex() throws DBMSException {
+        Path metadataPage = Path.of("data", table_name, "primary_key_index", "bptree_page_0.dat");
+        if (!getPrimaryKeyColumns().isEmpty() && !Files.exists(metadataPage)) {
+            primaryKeyIndex.save(new BPlusTree<>(4));
+            TableIterator tableIterator = iterator();
+            while (tableIterator.hasNext()) {
+                String primaryKey = primaryKeyForRecord(tableIterator.next());
+                if (!primaryKeyIndex.search(primaryKey).isEmpty()) {
+                    throw new DBMSException("Duplicate primary key value.");
+                }
+                primaryKeyIndex.insert(primaryKey, new RowPointer(0, 0));
+            }
+        }
+    }
+
+    private String primaryKeyForRecord(Record record) throws DBMSException {
+        List<String> primaryKeyColumns = getPrimaryKeyColumns();
+        if (primaryKeyColumns.isEmpty()) {
+            return null;
+        }
+
+        StringBuilder key = new StringBuilder();
+        for (String primaryKeyColumn : primaryKeyColumns) {
+            DBMSDataType value = record.getValue(primaryKeyColumn);
+            if (value == null || value.toString().isEmpty()) {
+                throw new DBMSException("Primary key column '" + primaryKeyColumn + "' must be non-null and non-empty.");
+            }
+            String encodedValue = value.getType() + ":" + value.toString();
+            key.append(encodedValue.length()).append(':').append(encodedValue).append('|');
+        }
+        return key.toString();
     }
 }

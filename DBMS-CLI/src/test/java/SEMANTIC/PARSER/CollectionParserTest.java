@@ -25,6 +25,8 @@ import SEMANTIC.AST_NODES.SelectedColumnList;
 import SEMANTIC.AST_NODES.UnaryCondition;
 import SEMANTIC.AST_NODES.Value;
 import SEMANTIC.AST_NODES.ValueList;
+import SEMANTIC.AST_NODES.LEAF_NODES.Identifier;
+import SEMANTIC.PARSER.LEAF.IdentifierParser;
 import SEMANTIC.PARSER.util.ParserContext;
 
 class CollectionParserTest {
@@ -34,9 +36,13 @@ class CollectionParserTest {
         ParserContext ctx = mock(ParserContext.class);
         ColumnDefinition first = mock(ColumnDefinition.class);
         ColumnDefinition second = mock(ColumnDefinition.class);
+        when(first.isPrimaryKey()).thenReturn(false);
+        when(second.isPrimaryKey()).thenReturn(false);
 
         when(ctx.current()).thenReturn(
+                token(TokenType.IDENTIFIER, "id", 0),
                 token(TokenType.COMMA, ",", 5),
+                token(TokenType.IDENTIFIER, "name", 7),
                 token(TokenType.RPAREN, ")", 9));
         doNothing().when(ctx).advance();
 
@@ -46,7 +52,39 @@ class CollectionParserTest {
             ColumnDefinitionList result = ColumnDefinitionListParser.parse(ctx);
 
             assertEquals(List.of(first, second), result.getColumnList());
+            assertEquals(List.of(), result.getPrimaryKeyColumns());
             verify(ctx, times(1)).advance();
+        }
+    }
+
+    @Test
+    void shouldParseCompositePrimaryKeyConstraintInColumnDefinitionList() throws Exception {
+        ParserContext ctx = mock(ParserContext.class);
+        ColumnDefinition first = mock(ColumnDefinition.class);
+
+        when(first.isPrimaryKey()).thenReturn(false);
+        when(ctx.current()).thenReturn(
+                token(TokenType.IDENTIFIER, "id", 0),
+                token(TokenType.COMMA, ",", 6),
+                token(TokenType.PRIMARY, "PRIMARY", 8),
+                token(TokenType.KEY, "KEY", 16),
+                token(TokenType.LPAREN, "(", 20),
+                token(TokenType.COMMA, ",", 23),
+                token(TokenType.RPAREN, ")", 29),
+                token(TokenType.RPAREN, ")", 29));
+        doNothing().when(ctx).advance();
+
+        try (MockedStatic<ColumnDefinitionParser> definitionMock = mockStatic(ColumnDefinitionParser.class);
+             MockedStatic<IdentifierParser> identifierMock = mockStatic(IdentifierParser.class)) {
+            definitionMock.when(() -> ColumnDefinitionParser.parse(ctx)).thenReturn(first);
+            identifierMock.when(() -> IdentifierParser.parse(ctx))
+                    .thenReturn(identifier("id"), identifier("name"));
+
+            ColumnDefinitionList result = ColumnDefinitionListParser.parse(ctx);
+
+            assertEquals(List.of(first), result.getColumnList());
+            assertEquals(List.of("id", "name"), result.getPrimaryKeyColumns());
+            verify(ctx, times(6)).advance();
         }
     }
 
@@ -132,5 +170,11 @@ class CollectionParserTest {
 
     private static Token token(TokenType type, String lexeme, int position) {
         return new Token(type, lexeme, position);
+    }
+
+    private static Identifier identifier(String name) {
+        Identifier identifier = new Identifier();
+        identifier.setName(name);
+        return identifier;
     }
 }

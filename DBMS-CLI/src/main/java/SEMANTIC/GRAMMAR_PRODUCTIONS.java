@@ -11,11 +11,16 @@ class GRAMMAR_PRODUCTIONS {}
                      | <select_stmt>
                      | <drop_stmt>
 
-<create_stmt>      ::= "CREATE" "TABLE" <table_name> "(" <column_def_list> ")"
+<create_stmt>      ::= "CREATE" "TABLE" <table_name> "(" <table_element_list> ")"
 
-<column_def_list>  ::= <column_def> ("," <column_def>)*
+<table_element_list> ::= <table_element> ("," <table_element>)*
 
-<column_def>       ::= <column_name> <data_type>
+<table_element>    ::= <column_def>
+                     | <primary_key_constraint>
+
+<column_def>       ::= <column_name> <data_type> ["PRIMARY" "KEY"]
+
+<primary_key_constraint> ::= "PRIMARY" "KEY" "(" <column_name> ("," <column_name>)* ")"
 
 <data_type>        ::= "INT" | "STRING"
 

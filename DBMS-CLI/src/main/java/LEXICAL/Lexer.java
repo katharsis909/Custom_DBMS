@@ -20,7 +20,9 @@ public class Lexer {
             Map.entry("STRING", TokenType.STRING),
             Map.entry("INSERT", TokenType.INSERT),
             Map.entry("INTO", TokenType.INTO),
-            Map.entry("AND", TokenType.AND)
+            Map.entry("AND", TokenType.AND),
+            Map.entry("PRIMARY", TokenType.PRIMARY),
+            Map.entry("KEY", TokenType.KEY)
         );
     //Keywords
 

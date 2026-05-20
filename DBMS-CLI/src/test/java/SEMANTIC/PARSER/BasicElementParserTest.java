@@ -172,6 +172,7 @@ class BasicElementParserTest {
         ParserContext ctx = mock(ParserContext.class);
         Identifier identifier = identifier("id");
         DataType dataType = dataType("INT");
+        when(ctx.current()).thenReturn(token(TokenType.COMMA, ",", 6));
 
         try (MockedStatic<IdentifierParser> identifierMock = mockStatic(IdentifierParser.class);
              MockedStatic<DataTypeParser> dataTypeMock = mockStatic(DataTypeParser.class)) {
@@ -182,6 +183,31 @@ class BasicElementParserTest {
 
             assertSame(identifier, result.getColumnName());
             assertSame(dataType, result.getDataType());
+            assertEquals(false, result.isPrimaryKey());
+        }
+    }
+
+    @Test
+    void shouldParseInlinePrimaryKeyColumnDefinition() throws Exception {
+        ParserContext ctx = mock(ParserContext.class);
+        Identifier identifier = identifier("id");
+        DataType dataType = dataType("INT");
+        when(ctx.current()).thenReturn(
+                token(TokenType.PRIMARY, "PRIMARY", 7),
+                token(TokenType.KEY, "KEY", 15));
+        doNothing().when(ctx).advance();
+
+        try (MockedStatic<IdentifierParser> identifierMock = mockStatic(IdentifierParser.class);
+             MockedStatic<DataTypeParser> dataTypeMock = mockStatic(DataTypeParser.class)) {
+            identifierMock.when(() -> IdentifierParser.parse(ctx)).thenReturn(identifier);
+            dataTypeMock.when(() -> DataTypeParser.parse(ctx)).thenReturn(dataType);
+
+            ColumnDefinition result = ColumnDefinitionParser.parse(ctx);
+
+            assertSame(identifier, result.getColumnName());
+            assertSame(dataType, result.getDataType());
+            assertEquals(true, result.isPrimaryKey());
+            verify(ctx, org.mockito.Mockito.times(2)).advance();
         }
     }
 

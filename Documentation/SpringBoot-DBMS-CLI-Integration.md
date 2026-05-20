@@ -62,11 +62,13 @@ Notes:
 ### CREATE TABLE
 - validates table name uniqueness in catalog
 - persists schema to `schema.txt`
+- initializes a persisted B+ tree primary-key index when the schema has a primary key
 - creates a storage-backed `Table`
 - registers it in memory
 
 ### INSERT INTO
 - validates values against schema
+- rejects empty or duplicate primary-key values
 - builds a logical `Record`
 - serializes the row
 - inserts and flushes it through `PageManager`

@@ -22,6 +22,7 @@ This repository contains a custom MiniSQL DBMS engine and a Spring Boot API wrap
 
 Current SQL support:
 - `CREATE TABLE`
+- primary keys in `CREATE TABLE`, either inline (`id INT PRIMARY KEY`) or composite (`PRIMARY KEY (id, name)`)
 - `INSERT INTO`
 - `SELECT ... FROM ... [WHERE ... AND ...]`
 - `DROP TABLE`
@@ -32,6 +33,7 @@ Current engine capabilities:
 - fixed-size `4096` byte page files
 - streaming table scans through a page iterator
 - physical row references available at insert time as `(pageId, rowOffset)`
+- primary-key uniqueness and non-empty validation backed by a persisted B+ tree index
 - shared line-aware error formatting for CLI and Spring Boot
 - structured query results for the web layer
 
@@ -58,6 +60,9 @@ Each table is stored as:
 data/
   <tableName>/
     schema.txt
+    primary_key_index/
+      bptree_page_0.dat
+      ...
     page_0.dat
     page_1.dat
     ...

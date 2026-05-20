@@ -9,7 +9,7 @@ public enum TokenType
     INT, STRING,
 
     //Keywords
-    TABLE, FROM, INTO,
+    TABLE, FROM, INTO, PRIMARY, KEY,
 
     // Symbols
     COMMA, STAR, LPAREN, RPAREN, EQUAL,SEMICOLON, AND,
