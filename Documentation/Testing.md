@@ -178,6 +178,44 @@ Outliers:
 - `TableIterator` uses static mocking of `RowSerializer.deserialize(...)` so the test stays focused on page traversal rather than row decoding internals
 - some CSV rows intentionally describe future-facing gaps, such as unsupported column types, fixed string-size limits, and the currently ignored deleted-row flag
 
+### B+ Tree Persistence Tests
+
+The B+ tree persistence tests focus on the on-disk index page format and direct page operations.
+
+Files:
+- `DBMS-CLI/src/main/java/indexing/bplustree/BPlusTreeDiskStore.java`
+- `DBMS-CLI/src/main/java/indexing/bplustree/BPlusTreePageCodec.java`
+- `DBMS-CLI/src/test/java/indexing/bplustree/BPlusTreeDiskStoreTest.java`
+
+What this testing does:
+- writes and reads one persisted leaf node page
+- saves and loads a whole B+ tree snapshot for compatibility
+- manually writes persisted B+ tree pages and searches them without loading the whole tree
+- checks search through an internal root page
+- checks search when the root is already a leaf page
+- deletes one value from a duplicate key bucket
+- checks that missing-value delete returns `false`
+- deletes whole keys and verifies search still works after rebalancing
+- deletes enough keys to verify root shrinking
+
+Important behavior:
+- `search(key)` reads only the root-to-leaf page path.
+- `delete(key, value)` and `delete(key)` mutate persisted pages directly.
+- delete may rewrite the target leaf, siblings, parent pages, and metadata, but it does not call `load()` or rebuild the whole tree.
+- `RowPointer` has value equality so persisted row references can be deleted by `(pageId, rowOffset)`.
+
+Focused command:
+
+```bash
+mvn -q -Dtest=indexing.bplustree.BPlusTreeDiskStoreTest test
+```
+
+Design notes:
+- tests use `@TempDir` so B+ tree page files are real files but isolated
+- manual page fixtures keep direct search tests independent from in-memory insertion behavior
+- whole-tree save/load tests still exist to verify snapshot compatibility
+- delete tests intentionally exercise duplicate buckets, missing values, leaf/internal rebalancing, and root shrink
+
 ### Statement Benchmarks
 
 The project now also has JMH benchmarks for statement execution costs.
@@ -255,6 +293,12 @@ For persistence testing:
 - add a new CSV row when a page or serializer scenario is mostly data-driven
 - add a direct JUnit test when disk behavior, iterator control flow, or collaborator wiring is the real thing being verified
 - keep future-gap cases explicit in the CSV notes so unsupported behavior is documented on purpose
+
+For B+ tree persistence testing:
+- add direct JUnit tests instead of CSV rows, because the behavior depends on page topology
+- prefer small manual page fixtures when testing direct disk search
+- use larger saved trees when testing delete rebalancing and root shrink
+- after changing delete or page metadata, run `mvn -q -Dtest=indexing.bplustree.BPlusTreeDiskStoreTest test`
 
 For statement benchmarks:
 - add a new benchmark method when you want to compare a distinct execution shape, not just another correctness branch

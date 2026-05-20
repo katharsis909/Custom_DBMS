@@ -32,6 +32,7 @@ Current engine capabilities:
 - fixed-size `4096` byte page files
 - streaming table scans through a page iterator
 - physical row references available at insert time as `(pageId, rowOffset)`
+- persisted B+ tree index pages with direct exact search and delete support
 - shared line-aware error formatting for CLI and Spring Boot
 - structured query results for the web layer
 
@@ -66,9 +67,46 @@ data/
 Top-down persistence documentation:
 - [Disk Persistence Architecture](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/Disk-Persistence-Architecture.md)
 - [disk_persistence Package](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/README.md)
+- [B+ Tree Persistence](Documentation/indexing/BPlusTreePersistence.md)
 
 Testing documentation:
 - [Testing](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/Testing.md)
+
+## Statement Benchmark Snapshot
+
+JMH benchmarks were run for statement execution in the CLI engine.
+
+Measured shapes:
+- `insert100Rows`
+- `selectAll`
+- `selectSingleColumn`
+- `selectWhereSingleMatch`
+- `selectWhereNoMatch`
+
+Observed averages from the current benchmark run:
+
+| Benchmark | Rows | Avg time |
+| --- | ---: | ---: |
+| `insert100Rows` | 100 inserts per invocation | `0.057 ms/op` |
+| `selectAll` | 10,000 | `4.324 ms/op` |
+| `selectAll` | 100,000 | `52.248 ms/op` |
+| `selectSingleColumn` | 10,000 | `3.811 ms/op` |
+| `selectSingleColumn` | 100,000 | `44.121 ms/op` |
+| `selectWhereNoMatch` | 10,000 | `3.496 ms/op` |
+| `selectWhereNoMatch` | 100,000 | `36.951 ms/op` |
+| `selectWhereSingleMatch` | 10,000 | `3.354 ms/op` |
+| `selectWhereSingleMatch` | 100,000 | `36.371 ms/op` |
+
+Benchmark command:
+
+```bash
+mvn -q -DskipTests test-compile exec:java \
+  -Dexec.classpathScope=test \
+  -Dexec.mainClass=benchmark.StatementBenchmarkRunner
+```
+
+Benchmark note:
+- these numbers came from the current Maven-based non-forked JMH runner, so they are useful for local comparison inside this project, but not yet a rigorous cross-database benchmark
 
 ## Spring Boot API
 

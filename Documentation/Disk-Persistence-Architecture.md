@@ -6,6 +6,8 @@ This document explains the persistence feature top-down.
 
 The original MiniSQL project stored all table rows only in memory. After this change, tables are persisted on disk and automatically reloaded when the engine starts again.
 
+The project also now has a persisted B+ tree index format. The index is not yet wired into SQL planning, but its pages can be saved, searched, loaded, and deleted from directly.
+
 ## High-Level Flow
 
 ```text
@@ -41,7 +43,8 @@ The parser and AST design remain the same. The major change is below `Table`.
 - `SELECT` now streams rows using `TableIterator`.
 - `CREATE TABLE` persists schema.
 - `DROP TABLE` removes the on-disk table directory.
-- `INSERT` now returns a physical row reference internally as `(pageId, rowOffset)` for future index structures.
+- `INSERT` now returns a physical row reference internally as `(pageId, rowOffset)` for index structures.
+- The B+ tree disk store can persist index pages and perform exact-key search/delete without loading the whole tree.
 
 ## Storage Layout
 
@@ -70,6 +73,28 @@ marks INT
 ### `page_<id>.dat`
 Each page file stores one fixed-size 4 KB page.
 
+## Index Storage Layout
+
+B+ tree indexes use fixed-size page files too, but they are separate from table row pages.
+
+An index directory stores:
+
+```text
+bptree_page_0.dat
+bptree_page_1.dat
+bptree_page_2.dat
+...
+```
+
+Page `0` is the B+ tree metadata page. It stores the branching factor, root page id, first leaf page id, distinct key count, total value count, and node count.
+
+Other pages are B+ tree nodes:
+- leaf pages store sorted keys and value buckets
+- internal pages store separator keys and child page ids
+
+Detailed index documentation:
+- [B+ Tree Persistence](indexing/BPlusTreePersistence.md)
+
 ## Package Structure
 
 ```text
@@ -79,6 +104,13 @@ DBMS-CLI/src/main/java/disk_persistence/
   RowPointer.java
   RowSerializer.java
   TableIterator.java
+
+DBMS-CLI/src/main/java/indexing/bplustree/
+  BPlusTree.java
+  BPlusTreeDiskStore.java
+  BPlusTreePageCodec.java
+  BPlusTreeSerializers.java
+  BPlusTreeValueSerializer.java
 ```
 
 Subdocuments:
@@ -88,6 +120,7 @@ Subdocuments:
 - [RowPointer](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/RowPointer.md)
 - [RowSerializer](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/RowSerializer.md)
 - [TableIterator](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/TableIterator.md)
+- [B+ Tree Persistence](indexing/BPlusTreePersistence.md)
 
 ## Statement-Level Behavior
 
@@ -150,7 +183,8 @@ The page id and row offset are already known at insert time. Exposing them now c
 - current page flushed on each insert
 - no delete reuse yet
 - no compaction
-- no indexing
+- B+ tree persistence exists, but SQL execution does not use indexes yet
+- direct B+ tree page-level insert is not implemented yet
 - no crash recovery
 - no buffer pool beyond the current page
 - no pagination in the frontend yet
@@ -159,5 +193,6 @@ The page id and row offset are already known at insert time. Exposing them now c
 1. Support deleted-row skipping using the row deleted flag.
 2. Add free-space reuse or compaction.
 3. Add better page discovery/caching inside `PageManager`.
-4. Use `RowPointer` as the reference payload for index entries.
-5. Separate “reload catalog” and “wipe persisted data” as distinct admin operations.
+4. Implement direct page-level B+ tree insert.
+5. Use `RowPointer` indexes in `WHERE` planning for exact-match predicates.
+6. Separate “reload catalog” and “wipe persisted data” as distinct admin operations.
