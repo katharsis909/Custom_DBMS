@@ -11,8 +11,8 @@ public class OperatorParser {
     public static Operator parse(ParserContext ctx) throws ParseException, LexerException {
         Token token = ctx.current();
 
-        if (token.getType() != TokenType.EQUAL) {
-            throw ctx.errorAt("Expected '=' operator but found: " + token.getLexeme(), token.getPosition());
+        if (!isComparisonOperator(token.getType())) {
+            throw ctx.errorAt("Expected comparison operator but found: " + token.getLexeme(), token.getPosition());
         }
         //expect function of ctx will print EQUAL instead of =; so do not use
 
@@ -20,5 +20,14 @@ public class OperatorParser {
         Operator op = new Operator();
         op.setSymbol(token.getLexeme());
         return op;
+    }
+
+    private static boolean isComparisonOperator(TokenType type) {
+        return type == TokenType.EQUAL
+                || type == TokenType.NOT_EQUAL
+                || type == TokenType.LESS_THAN
+                || type == TokenType.LESS_THAN_EQUAL
+                || type == TokenType.GREATER_THAN
+                || type == TokenType.GREATER_THAN_EQUAL;
     }
 }

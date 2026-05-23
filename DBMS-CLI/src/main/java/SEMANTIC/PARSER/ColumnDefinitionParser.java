@@ -25,6 +25,21 @@ public class ColumnDefinitionParser {
             ctx.advance();
             def.setPrimaryKey(true);
         }
+        if (ctx.current().getType() == TokenType.REFERENCES) {
+            ctx.advance();
+            Identifier referencedTable = IdentifierParser.parse(ctx);
+            if (ctx.current().getType() != TokenType.LPAREN) {
+                throw ctx.error("Expected '(' after referenced table");
+            }
+            ctx.advance();
+            Identifier referencedColumn = IdentifierParser.parse(ctx);
+            if (ctx.current().getType() != TokenType.RPAREN) {
+                throw ctx.error("Expected ')' after referenced column");
+            }
+            ctx.advance();
+            def.setForeignTableName(referencedTable);
+            def.setForeignColumnName(referencedColumn);
+        }
 
         return def;
     }

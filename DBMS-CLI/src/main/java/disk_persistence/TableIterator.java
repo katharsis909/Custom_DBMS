@@ -50,4 +50,11 @@ public class TableIterator {
         currentRowIndex++;
         return RowSerializer.deserialize(rowBytes, table);
     }
+
+    public RowPointer nextPointer() throws DBMSException {
+        if (!hasNext()) {
+            throw new NoSuchElementException();
+        }
+        return new RowPointer(currentPageId, currentPage.getRowOffset(currentRowIndex));
+    }
 }

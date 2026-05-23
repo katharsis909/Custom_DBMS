@@ -11,7 +11,12 @@ public class Main {
     {
         String columnName = columnDefinition.getColumnName().getName();
         String columnType = columnDefinition.getDataType().getDataType();
-        return  new Column(columnName, columnType, columnDefinition.isPrimaryKey());
+        Column column = new Column(columnName, columnType, columnDefinition.isPrimaryKey());
+        if (columnDefinition.hasForeignKey()) {
+            column.setForeignTableName(columnDefinition.getForeignTableName().getName());
+            column.setForeignColumnName(columnDefinition.getForeignColumnName().getName());
+        }
+        return column;
     }
 
     public static List<Column> toColumnListFromDefinition(List<ColumnDefinition> columnDefs) {

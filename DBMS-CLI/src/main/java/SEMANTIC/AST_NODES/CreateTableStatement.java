@@ -35,6 +35,8 @@ public class CreateTableStatement extends Statement {
         try {
             List<Column> convertedColumns = Main.toColumnListFromDefinition(getColumns().getColumnList());
             applyTablePrimaryKeyColumns(convertedColumns);
+            applyTableForeignKeys(convertedColumns);
+            validateForeignKeys(db, convertedColumns);
             db.addTable(getTableName().getName(), convertedColumns);
         } catch (DBMSException exception) {
             throw attachPosition(exception, getSourcePosition());
@@ -66,6 +68,41 @@ public class CreateTableStatement extends Statement {
                 if (column.getColumnName().equals(primaryKeyColumn)) {
                     column.setPrimaryKey(true);
                 }
+            }
+        }
+    }
+
+    private void applyTableForeignKeys(List<Column> convertedColumns) throws DBMSException {
+        for (ColumnDefinitionList.ForeignKeyDefinition foreignKey : getColumns().getForeignKeys()) {
+            boolean found = false;
+            for (Column column : convertedColumns) {
+                if (column.getColumnName().equals(foreignKey.getColumnName())) {
+                    column.setForeignTableName(foreignKey.getReferencedTableName());
+                    column.setForeignColumnName(foreignKey.getReferencedColumnName());
+                    found = true;
+                }
+            }
+            if (!found) {
+                throw new DBMSException("Foreign key column '" + foreignKey.getColumnName() + "' does not exist.");
+            }
+        }
+    }
+
+    private void validateForeignKeys(Catalog catalog, List<Column> convertedColumns) throws DBMSException {
+        for (Column column : convertedColumns) {
+            if (!column.hasForeignKey()) {
+                continue;
+            }
+            STRUCTURE.Table referencedTable = catalog.getTable(column.getForeignTableName());
+            boolean referencedColumnExists = false;
+            for (Column referencedColumn : referencedTable.getColumnList()) {
+                if (referencedColumn.getColumnName().equals(column.getForeignColumnName())) {
+                    referencedColumnExists = true;
+                }
+            }
+            if (!referencedColumnExists) {
+                throw new DBMSException("Referenced column '" + column.getForeignColumnName()
+                        + "' does not exist in table '" + column.getForeignTableName() + "'.");
             }
         }
     }

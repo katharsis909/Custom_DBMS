@@ -16,7 +16,10 @@ public class CreateTableStatementParser {
         if (ctx.current().getType() != TokenType.CREATE)
             throw ctx.error("Expected 'CREATE' at start of CREATE TABLE statement");
         ctx.advance();
+        return parseAfterCreate(ctx, statementPosition);
+    }
 
+    static CreateTableStatement parseAfterCreate(ParserContext ctx, int statementPosition) throws ParseException, LexerException {
         if (ctx.current().getType() != TokenType.TABLE)
             throw ctx.error("Expected 'TABLE' after 'CREATE'");
         ctx.advance();

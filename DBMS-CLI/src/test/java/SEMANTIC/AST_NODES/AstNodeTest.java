@@ -340,7 +340,7 @@ class AstNodeTest {
         statement.setValueList(valueList);
 
         assertNull(statement.execute(catalog));
-        verify(table).addRecord(values);
+        verify(table).addRecord(values, catalog);
     }
 
     @Test
@@ -370,6 +370,7 @@ class AstNodeTest {
         Record secondRecord = new Record();
 
         when(catalog.getTable("students")).thenReturn(table);
+        when(table.indexedRecordsFor(whereClause)).thenReturn(null);
         when(table.iterator()).thenReturn(iterator);
         when(iterator.hasNext()).thenReturn(true, true, false);
         when(iterator.next()).thenReturn(firstRecord, secondRecord);
@@ -398,6 +399,7 @@ class AstNodeTest {
         Record record = new Record();
 
         when(catalog.getTable("students")).thenReturn(table);
+        when(table.indexedRecordsFor(null)).thenReturn(null);
         when(table.iterator()).thenReturn(iterator);
         when(table.getColumnList()).thenReturn(List.of(new Column("id", "INT"), new Column("name", "STRING")));
         when(iterator.hasNext()).thenReturn(true, false);

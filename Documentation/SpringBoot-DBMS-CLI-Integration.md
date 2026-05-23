@@ -16,7 +16,7 @@ The important change is that `Catalog` and `Table` are now backed by on-disk per
 - `SELECT` now streams records through `TableIterator`
 - `CREATE TABLE` writes `schema.txt`
 - `DROP TABLE` deletes the table directory
-- `INSERT` now exposes a physical row reference internally as `(pageId, rowOffset)`
+- `INSERT` uses a physical row reference internally as `(pageId, rowOffset)` for B+ tree indexes
 
 ### Spring Boot side
 - `DbmsCliEngine` now works against a persistence-backed catalog
@@ -55,7 +55,8 @@ Notes:
 - `schema.txt` stores the ordered schema used by row serialization
 - each `page_<id>.dat` file is one fixed 4 KB page
 - inserts are append-only into the last page
-- insert-time row references are available for future index structures
+- insert-time row references are used by current B+ tree index structures
+- primary-key and secondary index entries store `RowPointer` values
 
 ## Statement Integration
 
@@ -63,27 +64,34 @@ Notes:
 - validates table name uniqueness in catalog
 - persists schema to `schema.txt`
 - initializes a persisted B+ tree primary-key index when the schema has a primary key
+- records foreign-key metadata and validates referenced table/column existence
 - creates a storage-backed `Table`
 - registers it in memory
 
 ### INSERT INTO
 - validates values against schema
 - rejects empty or duplicate primary-key values
+- rejects foreign-key values that do not exist in the referenced parent column
 - builds a logical `Record`
 - serializes the row
 - inserts and flushes it through `PageManager`
-- produces a `RowPointer` internally for future index use
+- updates the primary-key B+ tree and any secondary B+ tree indexes with the inserted row pointer
 
 ### SELECT
-- scans with `TableIterator`
+- uses a primary-key or secondary B+ tree index when the WHERE clause has a usable equality or bounded range predicate
+- otherwise scans with `TableIterator`
+- supports multiple `JOIN ... ON ...` clauses and qualified columns such as `table.column`
+- supports table aliases and alias-qualified columns such as `alias.column`
+- supports `GROUP BY` and `HAVING` with aggregate functions; non-aggregate selected columns must be grouped
+- supports `ORDER BY` on one or more columns, including qualified table/alias columns; simple indexed single-table ordering can read through the B+ tree order path
 - loads page bytes through `PageManager`
 - deserializes rows through `RowSerializer`
-- applies `WHERE` and projection
+- reapplies `WHERE` and projection
 - returns structured output blocks to the web layer
 
 ### DROP TABLE
 - removes the table from catalog
-- deletes the table directory from disk
+- deletes the table directory from disk, including page files, schema, primary-key index, secondary indexes, and index metadata
 
 ## API Endpoints
 
@@ -165,6 +173,9 @@ Default port:
 - no deleted-row reuse yet
 - no compaction
 - no buffer pool beyond the current page
-- no indexing or WAL
+- range scans currently load the persisted B+ tree into memory before scanning leaf entries
+- ORDER BY index scans currently load the persisted B+ tree into memory before scanning ordered leaf entries
+- GROUP BY currently uses hash grouping even when an index exists; B+ tree and composite-index grouping are future optimizer work
+- foreign keys do not yet enforce delete-time referential actions
+- no WAL
 - no pagination in the frontend yet
-- only equality operator (`=`) is implemented for `WHERE`

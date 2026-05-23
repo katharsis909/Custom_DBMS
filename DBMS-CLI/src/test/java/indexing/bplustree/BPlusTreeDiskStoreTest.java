@@ -139,6 +139,23 @@ class BPlusTreeDiskStoreTest {
     }
 
     @Test
+    void rangeScansPersistedPages() throws Exception {
+        BPlusTree<Integer, String> tree = new BPlusTree<>(4);
+        for (int i = 1; i <= 10; i++) {
+            tree.insert(i, "v" + i);
+        }
+        BPlusTreeDiskStore<Integer, String> store = new BPlusTreeDiskStore<>(
+                tempDir,
+                BPlusTreeSerializers.integers(),
+                BPlusTreeSerializers.strings()
+        );
+        store.save(tree);
+
+        assertEquals(List.of("v3", "v4", "v5", "v6"), store.searchRange(3, 6));
+    }
+
+
+    @Test
     void insertsIntoPersistedLeafWithoutSplit() throws Exception {
         writePersistedTree(
                 List.of(BPlusTree.NodeSnapshot.leaf(

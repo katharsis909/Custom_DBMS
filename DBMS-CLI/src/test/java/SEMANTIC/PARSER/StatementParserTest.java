@@ -28,13 +28,13 @@ class StatementParserTest {
 
         when(ctx.current()).thenReturn(token(TokenType.CREATE, "CREATE", 0));
 
-        try (MockedStatic<CreateTableStatementParser> createMock = mockStatic(CreateTableStatementParser.class)) {
-            createMock.when(() -> CreateTableStatementParser.parse(ctx)).thenReturn(statement);
+        try (MockedStatic<CreateStatementParser> createMock = mockStatic(CreateStatementParser.class)) {
+            createMock.when(() -> CreateStatementParser.parse(ctx)).thenReturn(statement);
 
             Statement result = StatementParser.parse(ctx);
 
             assertSame(statement, result);
-            createMock.verify(() -> CreateTableStatementParser.parse(ctx));
+            createMock.verify(() -> CreateStatementParser.parse(ctx));
         }
     }
 

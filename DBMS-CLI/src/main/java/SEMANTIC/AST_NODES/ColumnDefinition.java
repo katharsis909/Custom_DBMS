@@ -6,6 +6,8 @@ public class ColumnDefinition {
     private Identifier columnName;
     private DataType dataType; // "INT" or "STRING"
     private boolean primaryKey;
+    private Identifier foreignTableName;
+    private Identifier foreignColumnName;
 
     public Identifier getColumnName() {
         return columnName;
@@ -29,6 +31,26 @@ public class ColumnDefinition {
 
     public void setPrimaryKey(boolean primaryKey) {
         this.primaryKey = primaryKey;
+    }
+
+    public Identifier getForeignTableName() {
+        return foreignTableName;
+    }
+
+    public void setForeignTableName(Identifier foreignTableName) {
+        this.foreignTableName = foreignTableName;
+    }
+
+    public Identifier getForeignColumnName() {
+        return foreignColumnName;
+    }
+
+    public void setForeignColumnName(Identifier foreignColumnName) {
+        this.foreignColumnName = foreignColumnName;
+    }
+
+    public boolean hasForeignKey() {
+        return foreignTableName != null && foreignColumnName != null;
     }
 
     public String getColumnDataType() {

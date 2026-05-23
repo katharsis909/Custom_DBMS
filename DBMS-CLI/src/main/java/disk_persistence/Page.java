@@ -66,9 +66,27 @@ public class Page {
             throw new IllegalArgumentException("Invalid slot index " + slotIndex);
         }
 
-        int rowStart = getShort(HEADER_SIZE + (slotIndex * 2));
+        int rowStart = getRowOffset(slotIndex);
         int rowEnd = slotIndex == 0 ? PAGE_SIZE : getShort(HEADER_SIZE + ((slotIndex - 1) * 2));
         return Arrays.copyOfRange(data, rowStart, rowEnd);
+    }
+
+    public int getRowOffset(int slotIndex) {
+        int rowCount = getRowCount();
+        if (slotIndex < 0 || slotIndex >= rowCount) {
+            throw new IllegalArgumentException("Invalid slot index " + slotIndex);
+        }
+        return getShort(HEADER_SIZE + (slotIndex * 2));
+    }
+
+    public byte[] getRowByOffset(int rowOffset) {
+        int rowCount = getRowCount();
+        for (int slotIndex = 0; slotIndex < rowCount; slotIndex++) {
+            if (getRowOffset(slotIndex) == rowOffset) {
+                return getRow(slotIndex);
+            }
+        }
+        throw new IllegalArgumentException("Invalid row offset " + rowOffset);
     }
 
     public byte[] getData() {

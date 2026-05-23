@@ -13,7 +13,7 @@ public class Catalog {
         loadTables();
     }
 
-    public void addTable(String tableName, java.util.List<Column> schema) throws DBMSException {
+    public synchronized void addTable(String tableName, java.util.List<Column> schema) throws DBMSException {
         String key = tableName.toUpperCase();
         if (tables.containsKey(key)) {
             throw new DBMSException("Table '" + key + "' already exists.");
@@ -23,7 +23,7 @@ public class Catalog {
         tables.put(key, table);
     }
 
-    public Table getTable(String name) throws DBMSException
+    public synchronized Table getTable(String name) throws DBMSException
     {
         String key = name.toUpperCase();
         if (!tables.containsKey(key)) {
@@ -32,7 +32,7 @@ public class Catalog {
         return tables.get(key);
     }
 
-    public void dropTable(String name) throws DBMSException
+    public synchronized void dropTable(String name) throws DBMSException
     {
         String key = name.toUpperCase();
         Table table = tables.remove(key);

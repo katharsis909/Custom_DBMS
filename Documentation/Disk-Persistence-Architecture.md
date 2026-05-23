@@ -40,8 +40,9 @@ The parser and AST design remain the same. The major change is below `Table`.
 - `Table` now owns a `PageManager`.
 - `SELECT` now streams rows using `TableIterator`.
 - `CREATE TABLE` persists schema.
+- `CREATE TABLE` records foreign-key metadata and validates the referenced table/column exists.
 - `DROP TABLE` removes the on-disk table directory.
-- `INSERT` now returns a physical row reference internally as `(pageId, rowOffset)` for future index structures.
+- `INSERT` returns a physical row reference internally as `(pageId, rowOffset)` and uses it to maintain B+ tree indexes.
 
 ## Storage Layout
 
@@ -51,6 +52,14 @@ Each table is stored under:
 data/
   <tableName>/
     schema.txt
+    indexes.txt
+    primary_key_index/
+      bptree_page_0.dat
+      ...
+    indexes/
+      <indexName>/
+        bptree_page_0.dat
+        ...
     page_0.dat
     page_1.dat
     ...
@@ -98,6 +107,7 @@ CreateTableStatement
 -> new Table(tableName, schema)
 -> write schema.txt
 -> initialize primary_key_index when a primary key exists
+-> persist foreign-key metadata when present
 -> create/load PageManager
 ```
 
@@ -106,24 +116,62 @@ CreateTableStatement
 InsertIntoStatement
 -> Table.addRecord(...)
 -> build Record
+-> validate foreign-key references against parent tables when FK metadata exists
 -> validate primary-key values are non-empty and unique through B+ tree lookup
 -> RowSerializer.serialize(...)
 -> PageManager.insertRow(...)
 -> RowPointer(pageId, rowOffset)
 -> insert primary-key value into B+ tree index
+-> insert secondary-index values into their B+ tree indexes
 -> flush current page to disk
 ```
 
 ### SELECT
 ```text
 SelectStatement
--> Table.iterator()
--> TableIterator
+-> ask Table for indexed records when WHERE can use a primary-key or secondary B+ tree
+-> otherwise Table.iterator()
+-> TableIterator / RowPointer
 -> PageManager.loadPage(...)
--> Page.getRow(...)
+-> Page.getRow(...) or Page.getRowByOffset(...)
 -> RowSerializer.deserialize(...)
--> WHERE
+-> JOIN combinations when multiple tables are present
+-> WHERE recheck
+-> ORDER BY using an index-backed order path for simple single-table cases, or an in-memory sort after filtering/joining
 -> projection
+```
+
+### JOIN
+```text
+SelectStatement
+-> collect base table plus all JOIN tables
+-> optimizer orders table scans using row counts and whether join columns are indexed
+-> build combined records with qualified keys such as table.column
+-> aliases add equivalent keys such as alias.column
+-> apply every JOIN equality condition
+-> apply WHERE and projection
+```
+
+### GROUP BY
+```text
+SelectStatement
+-> validate SELECT contains only grouped columns and aggregate expressions
+-> choose grouping strategy
+-> currently hash grouped records by GROUP BY key
+-> compute COUNT/SUM/AVG/MIN/MAX
+-> apply HAVING aggregate predicates when present
+-> default unaliased aggregate headers to agg1, agg2, ...
+-> apply ORDER BY to grouped output when grouped columns are referenced
+```
+
+### ORDER BY
+```text
+SelectStatement
+-> parse ORDER BY column [ASC|DESC] entries
+-> for single-table, single-column ORDER BY, ask Table for B+ tree ordered records when the column has a primary-key or secondary index
+-> compare the estimated indexed-order cost with WHERE/filter/sort cost
+-> for multi-column or joined ordering, sort the filtered or joined rows with the ORDER BY comparator
+-> qualified table.column and alias.column names are supported
 ```
 
 ### DROP TABLE
@@ -132,6 +180,7 @@ DropTableStatement
 -> Catalog.dropTable(...)
 -> remove table from memory
 -> delete data/<tableName>/
+   (schema, pages, primary-key index, secondary indexes, and index metadata)
 ```
 
 ## Design Choices
@@ -145,15 +194,33 @@ Page files store rows compactly and do not repeat column names. `schema.txt` giv
 ### Why iterator-based SELECT?
 This avoids loading every row into memory before filtering. It also matches the long-term direction of page-by-page scans.
 
-### Why add RowPointer now?
-The page id and row offset are already known at insert time. Exposing them now creates a clean future seam for B-tree leaf references without forcing index implementation yet.
+### How are RowPointers used by indexes?
+The page id and row offset are already known at insert time. B+ tree leaf values store `RowPointer` objects so indexed SELECT can fetch candidate rows directly from page storage before rechecking the full WHERE clause.
+
+### Current range-scan implementation note
+Right now `BPlusTreeDiskStore.searchRange(...)` loads the persisted B+ tree into memory and then scans the leaf entries. That means range scans currently import the tree/leaf contents instead of walking only the needed on-disk leaf pages. This is intentionally simple for now and can be improved later by following the leaf-page chain directly from disk.
+
+The same limitation applies to the current ORDER BY index path: ordered scans load the persisted B+ tree and then walk leaf entries in memory. A later version can stream the needed leaf pages directly from disk.
+
+### GROUP BY index note
+GROUP BY currently uses hash grouping. The query code has a strategy hook where B+ tree grouping can be added later, including composite-index grouping when the GROUP BY column order matches the composite index order.
+
+### Concurrency note
+`DbmsCliEngine.execute...` is synchronized, and catalog/table mutation paths are synchronized so local concurrent calls do not interleave catalog updates, inserts, or index maintenance. This is still coarse-grained locking, not transaction isolation.
+
+### Foreign-key integrity note
+Foreign-key grammar and metadata are supported now. `CREATE TABLE` validates that the referenced table and column exist, and `INSERT` validates that each child value exists in the referenced parent column before writing the row. Delete-time referential actions such as restrict/cascade/set-null are not implemented yet.
 
 ## Current Limitations
 - append-only inserts
 - current page flushed on each insert
 - no delete reuse yet
 - no compaction
-- no indexing
+- range scans currently load the persisted B+ tree before scanning leaf entries
+- ORDER BY index scans currently load the persisted B+ tree before scanning ordered leaf entries
+- GROUP BY does not yet stream groups directly from B+ tree indexes or composite indexes
+- foreign keys do not yet enforce delete-time referential actions
+- pagination is intentionally deferred
 - no crash recovery
 - no buffer pool beyond the current page
 - no pagination in the frontend yet
@@ -162,5 +229,5 @@ The page id and row offset are already known at insert time. Exposing them now c
 1. Support deleted-row skipping using the row deleted flag.
 2. Add free-space reuse or compaction.
 3. Add better page discovery/caching inside `PageManager`.
-4. Use `RowPointer` as the reference payload for index entries.
+4. Optimize range scans to walk B+ tree leaf pages directly from disk.
 5. Separate “reload catalog” and “wipe persisted data” as distinct admin operations.

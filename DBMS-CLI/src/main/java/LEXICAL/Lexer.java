@@ -22,7 +22,24 @@ public class Lexer {
             Map.entry("INTO", TokenType.INTO),
             Map.entry("AND", TokenType.AND),
             Map.entry("PRIMARY", TokenType.PRIMARY),
-            Map.entry("KEY", TokenType.KEY)
+            Map.entry("KEY", TokenType.KEY),
+            Map.entry("FOREIGN", TokenType.FOREIGN),
+            Map.entry("REFERENCES", TokenType.REFERENCES),
+            Map.entry("INDEX", TokenType.INDEX),
+            Map.entry("JOIN", TokenType.JOIN),
+            Map.entry("ON", TokenType.ON),
+            Map.entry("AS", TokenType.AS),
+            Map.entry("GROUP", TokenType.GROUP),
+            Map.entry("BY", TokenType.BY),
+            Map.entry("HAVING", TokenType.HAVING),
+            Map.entry("ORDER", TokenType.ORDER),
+            Map.entry("ASC", TokenType.ASC),
+            Map.entry("DESC", TokenType.DESC),
+            Map.entry("COUNT", TokenType.COUNT),
+            Map.entry("SUM", TokenType.SUM),
+            Map.entry("AVG", TokenType.AVG),
+            Map.entry("MIN", TokenType.MIN),
+            Map.entry("MAX", TokenType.MAX)
         );
     //Keywords
 
@@ -46,11 +63,32 @@ public class Lexer {
         //No need for lookahead
         switch (c) {
             case ',': pos++; return new Token(TokenType.COMMA, ",", pos - 1);
+            case '.': pos++; return new Token(TokenType.DOT, ".", pos - 1);
                 //pos already++; Hence, pos-1
             case '*': pos++; return new Token(TokenType.STAR, "*", pos - 1);
             case '(': pos++; return new Token(TokenType.LPAREN, "(", pos - 1);
             case ')': pos++; return new Token(TokenType.RPAREN, ")", pos - 1);
             case '=': pos++; return new Token(TokenType.EQUAL, "=", pos - 1);
+            case '!':
+                if (peekNext('=')) {
+                    pos += 2;
+                    return new Token(TokenType.NOT_EQUAL, "!=", pos - 2);
+                }
+                throw new LexerException("INVALID token", pos);
+            case '<':
+                if (peekNext('=')) {
+                    pos += 2;
+                    return new Token(TokenType.LESS_THAN_EQUAL, "<=", pos - 2);
+                }
+                pos++;
+                return new Token(TokenType.LESS_THAN, "<", pos - 1);
+            case '>':
+                if (peekNext('=')) {
+                    pos += 2;
+                    return new Token(TokenType.GREATER_THAN_EQUAL, ">=", pos - 2);
+                }
+                pos++;
+                return new Token(TokenType.GREATER_THAN, ">", pos - 1);
             case '\'': return stringLiteral();
             // \' means ' ; Which is the String literal delimiter
             case ';': pos++; return new Token(TokenType.SEMICOLON, ";", pos - 1);
@@ -137,9 +175,13 @@ public class Lexer {
 
     private boolean isTokenTerminator(char c) 
     {
-        return Character.isWhitespace(c) || "=,();".indexOf(c) >= 0;
+        return Character.isWhitespace(c) || "=!<>,.();".indexOf(c) >= 0;
         // operators like =, (, ; need not be separate by spaces;
         //if character not foun
+    }
+
+    private boolean peekNext(char expected) {
+        return pos + 1 < length && input.charAt(pos + 1) == expected;
     }
 
     private Token stringLiteral()

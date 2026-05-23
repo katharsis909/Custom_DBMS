@@ -125,10 +125,10 @@ class BasicElementParserTest {
     void shouldThrowParseExceptionForInvalidOperator() throws Exception {
         ParserContext ctx = mock(ParserContext.class);
         Token invalid = token(TokenType.COMMA, ",", 4);
-        ParseException parseException = new ParseException("Expected '=' operator but found: ,", 4);
+        ParseException parseException = new ParseException("Expected comparison operator but found: ,", 4);
 
         when(ctx.current()).thenReturn(invalid);
-        when(ctx.errorAt("Expected '=' operator but found: ,", 4)).thenReturn(parseException);
+        when(ctx.errorAt("Expected comparison operator but found: ,", 4)).thenReturn(parseException);
 
         ParseException thrown = assertThrows(ParseException.class, () -> OperatorParser.parse(ctx));
 

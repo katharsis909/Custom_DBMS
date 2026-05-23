@@ -23,8 +23,13 @@ This repository contains a custom MiniSQL DBMS engine and a Spring Boot API wrap
 Current SQL support:
 - `CREATE TABLE`
 - primary keys in `CREATE TABLE`, either inline (`id INT PRIMARY KEY`) or composite (`PRIMARY KEY (id, name)`)
+- foreign-key metadata in `CREATE TABLE`, either inline (`child_id INT REFERENCES parent(id)`) or table-level (`FOREIGN KEY (child_id) REFERENCES parent(id)`)
+- `CREATE INDEX index_name ON table_name (column_name)`
 - `INSERT INTO`
-- `SELECT ... FROM ... [WHERE ... AND ...]`
+- `SELECT ... FROM ... [JOIN ... ON ...]* [WHERE ... AND ...]` with `=`, `!=`, `<`, `<=`, `>`, `>=`
+- table aliases in SELECT/JOIN, using either `AS alias` or a bare alias, and qualified references like `alias.column`
+- `GROUP BY` and `HAVING` with `COUNT`, `SUM`, `AVG`, `MIN`, and `MAX`; aggregate aliases use `AS`, otherwise default headers are `agg1`, `agg2`, ...
+- `ORDER BY` with one or more columns, including qualified table/alias columns, and optional `ASC`/`DESC`
 - `DROP TABLE`
 
 Current engine capabilities:
@@ -34,6 +39,12 @@ Current engine capabilities:
 - streaming table scans through a page iterator
 - physical row references available at insert time as `(pageId, rowOffset)`
 - primary-key uniqueness and non-empty validation backed by a persisted B+ tree index
+- inserts update the primary-key B+ tree and any secondary B+ tree indexes created with `CREATE INDEX`
+- WHERE planning can use primary-key and secondary B+ tree indexes for equality and bounded range predicates
+- ORDER BY planning can use a primary-key or secondary B+ tree index for a single-table, single-column ordering path; otherwise rows are sorted after filtering/joining
+- multi-table JOIN execution supports multiple `JOIN ... ON left = right` clauses with qualified column names
+- grouped SELECT allows only grouped columns plus aggregate expressions
+- SQL execution is synchronized at the engine level; catalog mutations and table insert/index maintenance are synchronized for local concurrency safety
 - shared line-aware error formatting for CLI and Spring Boot
 - structured query results for the web layer
 
@@ -43,7 +54,7 @@ Current engine capabilities:
 - catalog startup now reloads persisted tables from disk
 - restart no longer loses tables and inserted rows
 - `SELECT` now reads through persisted page scans instead of an in-memory record list
-- inserts now expose a physical row reference internally for future index work
+- inserts now use the physical row reference to maintain primary-key and secondary B+ tree indexes
 - line-aware errors continue to work as before
 
 ### Spring Boot
@@ -63,6 +74,11 @@ data/
     primary_key_index/
       bptree_page_0.dat
       ...
+    indexes/
+      <indexName>/
+        bptree_page_0.dat
+        ...
+    indexes.txt
     page_0.dat
     page_1.dat
     ...
@@ -164,7 +180,14 @@ Open this folder in BlueJ:
 
 - persisted table data is stored locally under `data/`
 - `SELECT` now streams rows from persisted pages
-- inserts now have a minimal future index seam through `RowPointer`
+- `CREATE TABLE` initializes the primary-key B+ tree when a primary key exists
+- foreign-key references are validated at CREATE TABLE time and enforced during INSERT; delete/update referential actions are intentionally deferred
+- `INSERT` maintains the primary-key B+ tree and all secondary B+ tree indexes
+- `DROP TABLE` deletes the table directory, so schema, pages, primary-key index, and secondary indexes are removed together
+- current range scans load the persisted B+ tree into memory before scanning leaf entries; this is intentionally simple for now and can later become a direct leaf-page walk
+- current ORDER BY index scans also load the persisted B+ tree before walking ordered leaf entries; this keeps the first implementation simple and can later become a direct on-disk leaf scan
+- GROUP BY currently uses hash grouping; the optimizer has an index-detection hook, but direct B+ tree grouping and composite-index grouping are later optimizations
 - persistence is currently append-only
-- there is no delete reuse, compaction, indexing, or crash recovery yet
+- pagination is intentionally deferred for later implementation
+- there is no delete reuse, compaction, or crash recovery yet
 - this project still favors educational clarity over production DB features

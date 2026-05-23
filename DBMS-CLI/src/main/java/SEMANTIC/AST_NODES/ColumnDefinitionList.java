@@ -6,10 +6,12 @@ import java.util.List;
 public class ColumnDefinitionList {
     private List<ColumnDefinition> columnList;
     private List<String> primaryKeyColumns;
+    private List<ForeignKeyDefinition> foreignKeys;
 
     public ColumnDefinitionList(List<ColumnDefinition> columnList) {
         this.setColumnList(columnList);
         this.primaryKeyColumns = new ArrayList<>();
+        this.foreignKeys = new ArrayList<>();
     }
 
     public List<ColumnDefinition> getColumnList() {
@@ -28,6 +30,14 @@ public class ColumnDefinitionList {
         this.primaryKeyColumns = new ArrayList<>(primaryKeyColumns);
     }
 
+    public List<ForeignKeyDefinition> getForeignKeys() {
+        return new ArrayList<>(foreignKeys);
+    }
+
+    public void setForeignKeys(List<ForeignKeyDefinition> foreignKeys) {
+        this.foreignKeys = new ArrayList<>(foreignKeys);
+    }
+
     public ColumnDefinitionList evaluate() {
         for (int i = 0; i < getColumnList().size(); i++) {
             getColumnList().get(i).evaluate();
@@ -35,5 +45,29 @@ public class ColumnDefinitionList {
         }
         return this;
         //return itself haha!
+    }
+
+    public static class ForeignKeyDefinition {
+        private final String columnName;
+        private final String referencedTableName;
+        private final String referencedColumnName;
+
+        public ForeignKeyDefinition(String columnName, String referencedTableName, String referencedColumnName) {
+            this.columnName = columnName;
+            this.referencedTableName = referencedTableName;
+            this.referencedColumnName = referencedColumnName;
+        }
+
+        public String getColumnName() {
+            return columnName;
+        }
+
+        public String getReferencedTableName() {
+            return referencedTableName;
+        }
+
+        public String getReferencedColumnName() {
+            return referencedColumnName;
+        }
     }
 }

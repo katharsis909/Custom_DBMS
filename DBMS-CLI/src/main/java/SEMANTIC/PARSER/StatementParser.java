@@ -13,7 +13,7 @@ public class StatementParser {
 
         switch (type) {
             case CREATE:
-                return CreateTableStatementParser.parse(ctx);
+                return CreateStatementParser.parse(ctx);
             case SELECT:
                 return SelectStatementParser.parse(ctx);
             case DROP:

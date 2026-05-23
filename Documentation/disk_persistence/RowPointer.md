@@ -9,10 +9,10 @@ It contains:
 - `rowOffset`
 
 ## Why It Exists
-The storage layer already knows the page id and row offset at insert time. `RowPointer` packages that information into one object so it can later be used by index structures such as a B-tree.
+The storage layer already knows the page id and row offset at insert time. `RowPointer` packages that information into one object so B+ tree indexes can point back to persisted rows.
 
 ## Current Use
-The current SQL execution flow does not consume `RowPointer` yet. It is exposed now as a minimal future seam for indexing work.
+`INSERT` receives a `RowPointer` from `PageManager.insertRow(...)` and stores it in the primary-key B+ tree plus any secondary B+ tree indexes. Indexed `SELECT` uses the pointer to fetch candidate records directly from page storage.
 
 ## Stability Note
 In the current append-only design, `(pageId, rowOffset)` is a practical physical reference.

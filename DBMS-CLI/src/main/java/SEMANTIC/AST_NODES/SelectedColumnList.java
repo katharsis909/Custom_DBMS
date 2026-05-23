@@ -10,6 +10,7 @@ import java.util.List;
 
 public class SelectedColumnList {
     private List<ColumnMention> columns;
+    private List<AggregateFunction> aggregateFunctions = new ArrayList<>();
     private boolean isSelectAll; // true if "SELECT *"
 
     public List<ColumnMention> getColumns() {
@@ -19,6 +20,18 @@ public class SelectedColumnList {
 
     public void setColumns(List<ColumnMention> columns) {
         this.columns = columns;
+    }
+
+    public List<AggregateFunction> getAggregateFunctions() {
+        return aggregateFunctions;
+    }
+
+    public void setAggregateFunctions(List<AggregateFunction> aggregateFunctions) {
+        this.aggregateFunctions = aggregateFunctions;
+    }
+
+    public boolean hasAggregates() {
+        return aggregateFunctions != null && !aggregateFunctions.isEmpty();
     }
 
     public boolean isSelectAll() {

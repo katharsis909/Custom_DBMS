@@ -121,6 +121,21 @@ public class BPlusTree<K extends Comparable<K>, V> {
         return results;
     }
 
+    public List<Map.Entry<K, V>> entriesInOrder() {
+        List<Map.Entry<K, V>> results = new ArrayList<>();
+        LeafNode leaf = firstLeaf;
+        while (leaf != null) {
+            for (int i = 0; i < leaf.keys.size(); i++) {
+                K key = leaf.keys.get(i);
+                for (V value : leaf.values.get(i)) {
+                    results.add(Map.entry(key, value));
+                }
+            }
+            leaf = leaf.next;
+        }
+        return results;
+    }
+
     public boolean delete(K key) {
         LeafNode leaf = findLeaf(key);
         int keyIndex = leaf.findKeyIndex(key);

@@ -16,26 +16,34 @@ public class ColumnDefinitionListParser {
     public static ColumnDefinitionList parse(ParserContext ctx) throws ParseException, LexerException {
         List<ColumnDefinition> defs = new ArrayList<>();
         List<String> primaryKeyColumns = new ArrayList<>();
+        List<ColumnDefinitionList.ForeignKeyDefinition> foreignKeys = new ArrayList<>();
 
-        parseListItem(ctx, defs, primaryKeyColumns);
+        parseListItem(ctx, defs, primaryKeyColumns, foreignKeys);
 
         while (ctx.current().getType() == TokenType.COMMA) {
             ctx.advance(); // skip ","
-            parseListItem(ctx, defs, primaryKeyColumns);
+            parseListItem(ctx, defs, primaryKeyColumns, foreignKeys);
         }
 
         ColumnDefinitionList list = new ColumnDefinitionList(defs);
         list.setPrimaryKeyColumns(primaryKeyColumns);
+        list.setForeignKeys(foreignKeys);
         return list;
     }
 
     private static void parseListItem(
             ParserContext ctx,
             List<ColumnDefinition> defs,
-            List<String> primaryKeyColumns
+            List<String> primaryKeyColumns,
+            List<ColumnDefinitionList.ForeignKeyDefinition> foreignKeys
     ) throws ParseException, LexerException {
-        if (ctx.current().getType() == TokenType.PRIMARY) {
+        TokenType currentType = ctx.current().getType();
+        if (currentType == TokenType.PRIMARY) {
             parseTablePrimaryKey(ctx, primaryKeyColumns);
+            return;
+        }
+        if (currentType == TokenType.FOREIGN) {
+            parseTableForeignKey(ctx, foreignKeys);
             return;
         }
 
@@ -43,6 +51,13 @@ public class ColumnDefinitionListParser {
         defs.add(def);
         if (def.isPrimaryKey()) {
             primaryKeyColumns.add(def.getColumnName().getName());
+        }
+        if (def.hasForeignKey()) {
+            foreignKeys.add(new ColumnDefinitionList.ForeignKeyDefinition(
+                    def.getColumnName().getName(),
+                    def.getForeignTableName().getName(),
+                    def.getForeignColumnName().getName()
+            ));
         }
     }
 
@@ -73,5 +88,49 @@ public class ColumnDefinitionListParser {
             throw ctx.error("Expected ')' after PRIMARY KEY columns");
         }
         ctx.advance();
+    }
+
+    private static void parseTableForeignKey(
+            ParserContext ctx,
+            List<ColumnDefinitionList.ForeignKeyDefinition> foreignKeys
+    ) throws ParseException, LexerException {
+        ctx.advance();
+        if (ctx.current().getType() != TokenType.KEY) {
+            throw ctx.error("Expected KEY after FOREIGN");
+        }
+        ctx.advance();
+        if (ctx.current().getType() != TokenType.LPAREN) {
+            throw ctx.error("Expected '(' after FOREIGN KEY");
+        }
+        ctx.advance();
+
+        Identifier columnName = IdentifierParser.parse(ctx);
+
+        if (ctx.current().getType() != TokenType.RPAREN) {
+            throw ctx.error("Expected ')' after FOREIGN KEY column");
+        }
+        ctx.advance();
+        if (ctx.current().getType() != TokenType.REFERENCES) {
+            throw ctx.error("Expected REFERENCES after FOREIGN KEY column");
+        }
+        ctx.advance();
+
+        Identifier referencedTable = IdentifierParser.parse(ctx);
+        if (ctx.current().getType() != TokenType.LPAREN) {
+            throw ctx.error("Expected '(' after referenced table");
+        }
+        ctx.advance();
+
+        Identifier referencedColumn = IdentifierParser.parse(ctx);
+        if (ctx.current().getType() != TokenType.RPAREN) {
+            throw ctx.error("Expected ')' after referenced column");
+        }
+        ctx.advance();
+
+        foreignKeys.add(new ColumnDefinitionList.ForeignKeyDefinition(
+                columnName.getName(),
+                referencedTable.getName(),
+                referencedColumn.getName()
+        ));
     }
 }

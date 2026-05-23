@@ -13,7 +13,8 @@ public class SelectedColumnListParser {
     public static SelectedColumnList parse(ParserContext ctx) throws ParseException, LexerException {
         SelectedColumnList scl = new SelectedColumnList();
 
-        if (ctx.current().getType() == TokenType.STAR) {
+        TokenType currentType = ctx.current().getType();
+        if (currentType == TokenType.STAR) {
             ctx.advance();
             scl.setSelectAll(true);
                 scl.setColumns(null);
@@ -21,17 +22,29 @@ public class SelectedColumnListParser {
         } else {
             scl.setSelectAll(false);
             scl.setColumns(new ArrayList<>());
+            scl.setAggregateFunctions(new ArrayList<>());
 
-            ColumnMention col = ColumnMentionParser.parse(ctx);
-            scl.getColumns().add(col);
+            parseSelectItem(ctx, scl, currentType);
 
             while (ctx.current().getType() == TokenType.COMMA) {
                 ctx.advance(); // Skip ','
-                ColumnMention nextCol = ColumnMentionParser.parse(ctx);
-                scl.getColumns().add(nextCol);
+                parseSelectItem(ctx, scl, ctx.current().getType());
             }
         }
 
         return scl;
+    }
+
+    private static void parseSelectItem(ParserContext ctx, SelectedColumnList scl) throws ParseException, LexerException {
+        parseSelectItem(ctx, scl, ctx.current().getType());
+    }
+
+    private static void parseSelectItem(ParserContext ctx, SelectedColumnList scl, TokenType currentType) throws ParseException, LexerException {
+        if (AggregateFunctionParser.isAggregate(currentType)) {
+            scl.getAggregateFunctions().add(AggregateFunctionParser.parse(ctx));
+            return;
+        }
+        ColumnMention col = ColumnMentionParser.parse(ctx);
+        scl.getColumns().add(col);
     }
 }

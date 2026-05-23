@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 public class BPlusTreeDiskStore<K extends Comparable<K>, V> {
@@ -69,6 +70,30 @@ public class BPlusTreeDiskStore<K extends Comparable<K>, V> {
         } catch (IOException | IllegalArgumentException e) {
             throw new DBMSException("Could not search B+ tree index at " + indexDirectory, e);
         }
+    }
+
+    public List<V> searchRange(K fromInclusive, K toInclusive) throws DBMSException {
+        if (fromInclusive.compareTo(toInclusive) > 0) {
+            return List.of();
+        }
+        List<V> values = new ArrayList<>();
+        for (Map.Entry<K, V> entry : load().searchRange(fromInclusive, toInclusive)) {
+            values.add(entry.getValue());
+        }
+        return values;
+    }
+
+    public List<V> valuesInOrder(boolean ascending) throws DBMSException {
+        List<V> values = new ArrayList<>();
+        List<Map.Entry<K, V>> entries = load().entriesInOrder();
+        if (!ascending) {
+            entries = new ArrayList<>(entries);
+            java.util.Collections.reverse(entries);
+        }
+        for (Map.Entry<K, V> entry : entries) {
+            values.add(entry.getValue());
+        }
+        return values;
     }
 
     public void insert(K key, V value) throws DBMSException {

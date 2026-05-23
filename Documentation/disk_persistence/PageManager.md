@@ -29,7 +29,7 @@ That object contains:
 - `pageId`
 - `rowOffset`
 
-This gives higher layers a ready-made physical reference for future B-tree or other secondary index structures.
+This gives higher layers the physical reference stored inside primary-key and secondary B+ tree leaf entries.
 
 ## Disk Contract
 The manager writes files under:

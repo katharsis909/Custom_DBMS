@@ -8,7 +8,7 @@ It is responsible for:
 - storing table rows in page files
 - converting logical records to bytes and back
 - managing the last writable page of a table
-- exposing physical row references for future indexing
+- exposing physical row references used by B+ tree indexes
 - scanning rows page-by-page for query execution
 
 ## Package Role in Architecture
@@ -50,5 +50,15 @@ TableIterator
 -> Record
 ```
 
+### Indexed lookup path
+```text
+B+ tree index
+-> RowPointer(pageId, rowOffset)
+-> PageManager.loadPage(pageId)
+-> Page.getRowByOffset(rowOffset)
+-> RowSerializer.deserialize()
+-> Record
+```
+
 ## Current Scope
-This package currently supports append-only persistence and sequential scans. It does not yet implement deletion reuse, compaction, caching, indexing, or crash recovery.
+This package currently supports append-only persistence, sequential scans, and physical row lookup for indexes. It does not yet implement deletion reuse, compaction, caching, or crash recovery.

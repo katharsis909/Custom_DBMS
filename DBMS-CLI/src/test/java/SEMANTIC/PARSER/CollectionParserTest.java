@@ -154,6 +154,7 @@ class CollectionParserTest {
         when(ctx.current()).thenReturn(
                 token(TokenType.IDENTIFIER, "name", 0),
                 token(TokenType.COMMA, ",", 4),
+                token(TokenType.IDENTIFIER, "age", 6),
                 token(TokenType.FROM, "FROM", 8));
         doNothing().when(ctx).advance();
 
