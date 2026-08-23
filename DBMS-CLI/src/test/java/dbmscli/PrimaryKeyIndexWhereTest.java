@@ -3,6 +3,7 @@ package dbmscli;
 import dbmscli.result.ExecutionResult;
 import dbmscli.result.QueryResultBlock;
 import org.junit.jupiter.api.Test;
+import STRUCTURE.Table;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,6 +14,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PrimaryKeyIndexWhereTest {
 
@@ -81,6 +83,106 @@ class PrimaryKeyIndexWhereTest {
 
             assertEquals("Index '" + indexName + "' already exists.", duplicate.getMessage());
             assertEquals("Column 'missing' does not exist.", missingColumn.getMessage());
+        } finally {
+            deleteRecursively(tableDir(tableName));
+        }
+    }
+
+    @Test
+    void compositeSecondaryIndexSupportsEqualityPrefixAndFullOrderBy() throws Exception {
+        String tableName = uniqueTableName("idx_composite");
+        try {
+            DbmsCliEngine engine = new DbmsCliEngine();
+            engine.execute("CREATE TABLE " + tableName + " (id INT PRIMARY KEY, age INT, name STRING);");
+            engine.execute("INSERT INTO " + tableName + " (1, 20, 'grace');");
+            engine.execute("INSERT INTO " + tableName + " (2, 20, 'ada');");
+            engine.execute("INSERT INTO " + tableName + " (3, 30, 'linus');");
+            engine.execute("CREATE INDEX age_name_idx_" + System.nanoTime() + " ON " + tableName + " (age, name);");
+
+            QueryResultBlock equalityPrefix = onlyBlock(engine.executeStructured(
+                    "SELECT name FROM " + tableName + " WHERE age = 20 ORDER BY age, name;"
+            ));
+            QueryResultBlock fullEquality = onlyBlock(engine.executeStructured(
+                    "SELECT id FROM " + tableName + " WHERE age = 20 AND name = 'grace';"
+            ));
+            QueryResultBlock ordered = onlyBlock(engine.executeStructured(
+                    "SELECT age, name FROM " + tableName + " ORDER BY age, name;"
+            ));
+
+            assertEquals(List.of(List.of("ada"), List.of("grace")), equalityPrefix.getRows());
+            assertEquals(List.of(List.of("1")), fullEquality.getRows());
+            assertEquals(
+                    List.of(
+                            List.of("20", "ada"),
+                            List.of("20", "grace"),
+                            List.of("30", "linus")
+                    ),
+                    ordered.getRows()
+            );
+        } finally {
+            deleteRecursively(tableDir(tableName));
+        }
+    }
+
+    @Test
+    void compositePrimaryKeySupportsIndexedLookupAndOrderingPrefixes() throws Exception {
+        String tableName = uniqueTableName("pk_composite");
+        try {
+            DbmsCliEngine engine = new DbmsCliEngine();
+            engine.execute("CREATE TABLE " + tableName + " (id INT, campus STRING, name STRING, PRIMARY KEY (id, campus));");
+            engine.execute("INSERT INTO " + tableName + " (1, 'north', 'ada');");
+            engine.execute("INSERT INTO " + tableName + " (1, 'south', 'grace');");
+            engine.execute("INSERT INTO " + tableName + " (2, 'north', 'linus');");
+
+            QueryResultBlock result = onlyBlock(engine.executeStructured(
+                    "SELECT name FROM " + tableName + " WHERE id = 1 AND campus = 'south';"
+            ));
+            QueryResultBlock ordered = onlyBlock(engine.executeStructured(
+                    "SELECT id, campus FROM " + tableName + " ORDER BY id, campus;"
+            ));
+
+            assertEquals(List.of(List.of("grace")), result.getRows());
+            assertEquals(
+                    List.of(
+                            List.of("1", "north"),
+                            List.of("1", "south"),
+                            List.of("2", "north")
+                    ),
+                    ordered.getRows()
+            );
+        } finally {
+            deleteRecursively(tableDir(tableName));
+        }
+    }
+
+    @Test
+    void loadsCompositeIndexMetadataFormatFromIndexesFile() throws Exception {
+        String tableName = uniqueTableName("stored_idx");
+        String indexName = "legacy_age_idx_" + System.nanoTime();
+        try {
+            DbmsCliEngine engine = new DbmsCliEngine();
+            engine.execute("CREATE TABLE " + tableName + " (id INT PRIMARY KEY, age INT, name STRING);");
+            engine.execute("INSERT INTO " + tableName + " (1, 20, 'grace');");
+            engine.execute("INSERT INTO " + tableName + " (2, 10, 'ada');");
+            engine.execute("CREATE INDEX " + indexName + " ON " + tableName + " (age);");
+
+            Files.writeString(tableDir(tableName).resolve("indexes.txt"), indexName + "\tage\n");
+
+            Table table = new Table(tableName);
+
+            assertTrue(table.hasIndexOnColumn("age"));
+            assertEquals(
+                    List.of("ada", "grace"),
+                    table.orderedRecordsFor(List.of("age"), true).stream()
+                            .map(record -> {
+                                try {
+                                    return record.getValue("name").toString();
+                                } catch (STRUCTURE.DBMSException ex) {
+                                    throw new RuntimeException(ex);
+                                }
+                            })
+                            .toList()
+            );
         } finally {
             deleteRecursively(tableDir(tableName));
         }

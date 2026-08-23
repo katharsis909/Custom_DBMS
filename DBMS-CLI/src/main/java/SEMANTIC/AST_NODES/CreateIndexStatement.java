@@ -6,10 +6,13 @@ import STRUCTURE.DBMSException;
 import STRUCTURE.Table;
 import dbmscli.result.QueryResultBlock;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CreateIndexStatement extends Statement {
     private Identifier indexName;
     private Identifier tableName;
-    private Identifier columnName;
+    private List<Identifier> columnNames = new ArrayList<>();
 
     public Identifier getIndexName() {
         return indexName;
@@ -27,19 +30,23 @@ public class CreateIndexStatement extends Statement {
         this.tableName = tableName;
     }
 
-    public Identifier getColumnName() {
-        return columnName;
+    public List<Identifier> getColumnNames() {
+        return new ArrayList<>(columnNames);
     }
 
-    public void setColumnName(Identifier columnName) {
-        this.columnName = columnName;
+    public void setColumnNames(List<Identifier> columnNames) {
+        this.columnNames = new ArrayList<>(columnNames);
     }
 
     @Override
-    public QueryResultBlock execute(Catalog catalog) throws DBMSException {
+        public QueryResultBlock execute(Catalog catalog) throws DBMSException {
         try {
             Table table = catalog.getTable(tableName.getName());
-            table.createIndex(indexName.getName(), columnName.getName());
+            List<String> indexColumns = new ArrayList<>();
+            for (Identifier columnName : columnNames) {
+                indexColumns.add(columnName.getName());
+            }
+            table.createIndex(indexName.getName(), indexColumns);
         } catch (DBMSException exception) {
             throw attachPosition(exception, getSourcePosition());
         }

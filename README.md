@@ -24,7 +24,7 @@ Current SQL support:
 - `CREATE TABLE`
 - primary keys in `CREATE TABLE`, either inline (`id INT PRIMARY KEY`) or composite (`PRIMARY KEY (id, name)`)
 - foreign-key metadata in `CREATE TABLE`, either inline (`child_id INT REFERENCES parent(id)`) or table-level (`FOREIGN KEY (child_id) REFERENCES parent(id)`)
-- `CREATE INDEX index_name ON table_name (column_name)`
+- `CREATE INDEX index_name ON table_name (column_name[, column_name ...])`
 - `INSERT INTO`
 - `SELECT ... FROM ... [JOIN ... ON ...]* [WHERE ... AND ...]` with `=`, `!=`, `<`, `<=`, `>`, `>=`
 - table aliases in SELECT/JOIN, using either `AS alias` or a bare alias, and qualified references like `alias.column`
@@ -37,31 +37,18 @@ Current engine capabilities:
 - persisted schema in `schema.txt`
 - fixed-size `4096` byte page files
 - streaming table scans through a page iterator
-- physical row references available at insert time as `(pageId, rowOffset)`
+- inserts capture each row's physical location as `(pageId, rowOffset)`, and B+ tree index entries store that `RowPointer` so indexed lookups can fetch the persisted row directly
 - primary-key uniqueness and non-empty validation backed by a persisted B+ tree index
 - inserts update the primary-key B+ tree and any secondary B+ tree indexes created with `CREATE INDEX`
-- WHERE planning can use primary-key and secondary B+ tree indexes for equality and bounded range predicates
-- ORDER BY planning can use a primary-key or secondary B+ tree index for a single-table, single-column ordering path; otherwise rows are sorted after filtering/joining
+- WHERE planning can use primary-key and secondary B+ tree indexes for equality, left-prefix composite lookups, and bounded range predicates
+- ORDER BY planning can use a primary-key or secondary B+ tree index for a single-table ordering path when the ORDER BY columns match a left prefix of the index and share one direction; otherwise rows are sorted after filtering/joining
 - multi-table JOIN execution supports multiple `JOIN ... ON left = right` clauses with qualified column names
 - grouped SELECT allows only grouped columns plus aggregate expressions
-- SQL execution is synchronized at the engine level; catalog mutations and table insert/index maintenance are synchronized for local concurrency safety
 - shared line-aware error formatting for CLI and Spring Boot
 - structured query results for the web layer
 
-## Essential Changes
-
-### CLI
-- catalog startup now reloads persisted tables from disk
-- restart no longer loses tables and inserted rows
-- `SELECT` now reads through persisted page scans instead of an in-memory record list
-- inserts now use the physical row reference to maintain primary-key and secondary B+ tree indexes
-- line-aware errors continue to work as before
-
-### Spring Boot
-- the engine behind the controller/service is now persistence-backed
-- `/api/sql/reset` reloads the in-process catalog from disk
-- `results` payload still returns structured table blocks for the frontend
-- the browser workbench was simplified to reduce noisy UI copy
+Implementation note:
+- when adding a new feature, also review whether it changes or weakens existing features, including cases where an older feature previously handled all of its valid cases but now only works for some of them, and update tests/docs accordingly
 
 ## Persistence Overview
 
@@ -186,7 +173,7 @@ Open this folder in BlueJ:
 - `DROP TABLE` deletes the table directory, so schema, pages, primary-key index, and secondary indexes are removed together
 - current range scans load the persisted B+ tree into memory before scanning leaf entries; this is intentionally simple for now and can later become a direct leaf-page walk
 - current ORDER BY index scans also load the persisted B+ tree before walking ordered leaf entries; this keeps the first implementation simple and can later become a direct on-disk leaf scan
-- GROUP BY currently uses hash grouping; the optimizer has an index-detection hook, but direct B+ tree grouping and composite-index grouping are later optimizations
+- GROUP BY currently uses hash grouping; the optimizer has an index-detection hook, but direct B+ tree grouping is still a later optimization
 - persistence is currently append-only
 - pagination is intentionally deferred for later implementation
 - there is no delete reuse, compaction, or crash recovery yet

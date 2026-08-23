@@ -8,6 +8,9 @@ import SEMANTIC.PARSER.Exception.ParseException;
 import SEMANTIC.PARSER.LEAF.IdentifierParser;
 import SEMANTIC.PARSER.util.ParserContext;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CreateIndexStatementParser {
     static CreateIndexStatement parseAfterCreate(ParserContext ctx, int statementPosition) throws ParseException, LexerException {
         if (ctx.current().getType() != TokenType.INDEX) {
@@ -29,10 +32,16 @@ public class CreateIndexStatementParser {
         }
         ctx.advance();
 
-        Identifier columnName = IdentifierParser.parse(ctx);
+        List<Identifier> columnNames = new ArrayList<>();
+        columnNames.add(IdentifierParser.parse(ctx));
+
+        while (ctx.current().getType() == TokenType.COMMA) {
+            ctx.advance();
+            columnNames.add(IdentifierParser.parse(ctx));
+        }
 
         if (ctx.current().getType() != TokenType.RPAREN) {
-            throw ctx.error("Expected ')' after index column");
+            throw ctx.error("Expected ')' after index columns");
         }
         ctx.advance();
 
@@ -40,7 +49,7 @@ public class CreateIndexStatementParser {
         statement.setSourcePosition(statementPosition);
         statement.setIndexName(indexName);
         statement.setTableName(tableName);
-        statement.setColumnName(columnName);
+        statement.setColumnNames(columnNames);
         return statement;
     }
 }

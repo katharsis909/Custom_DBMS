@@ -19,6 +19,7 @@ import LEXICAL.Token;
 import LEXICAL.TokenType;
 import SEMANTIC.AST_NODES.ColumnDefinition;
 import SEMANTIC.AST_NODES.ColumnDefinitionList;
+import SEMANTIC.AST_NODES.CreateIndexStatement;
 import SEMANTIC.AST_NODES.CreateTableStatement;
 import SEMANTIC.AST_NODES.DropTableStatement;
 import SEMANTIC.AST_NODES.InsertIntoStatement;
@@ -107,6 +108,36 @@ class StatementBodyParserTest {
             assertEquals(0, result.getSourcePosition());
             assertSame(tableName, result.getTableName());
             assertSame(values, result.getValueList());
+        }
+    }
+
+    @Test
+    void shouldParseCreateIndexStatementWithMultipleColumns() throws Exception {
+        ParserContext ctx = mock(ParserContext.class);
+        Identifier indexName = identifier("student_idx");
+        Identifier tableName = identifier("students");
+        Identifier firstColumn = identifier("age");
+        Identifier secondColumn = identifier("name");
+
+        when(ctx.current()).thenReturn(
+                token(TokenType.INDEX, "INDEX", 7),
+                token(TokenType.ON, "ON", 25),
+                token(TokenType.LPAREN, "(", 37),
+                token(TokenType.COMMA, ",", 41),
+                token(TokenType.RPAREN, ")", 47),
+                token(TokenType.RPAREN, ")", 47));
+        doNothing().when(ctx).advance();
+
+        try (MockedStatic<IdentifierParser> identifierMock = mockStatic(IdentifierParser.class)) {
+            identifierMock.when(() -> IdentifierParser.parse(ctx))
+                    .thenReturn(indexName, tableName, firstColumn, secondColumn);
+
+            CreateIndexStatement result = CreateIndexStatementParser.parseAfterCreate(ctx, 0);
+
+            assertEquals(0, result.getSourcePosition());
+            assertSame(indexName, result.getIndexName());
+            assertSame(tableName, result.getTableName());
+            assertEquals(List.of(firstColumn, secondColumn), result.getColumnNames());
         }
     }
 

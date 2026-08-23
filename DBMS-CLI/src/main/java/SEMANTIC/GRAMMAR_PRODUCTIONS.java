@@ -28,7 +28,7 @@ class GRAMMAR_PRODUCTIONS {}
 
 <foreign_key_constraint> ::= "FOREIGN" "KEY" "(" <column_name> ")" "REFERENCES" <table_name> "(" <column_name> ")"
 
-<create_index_stmt> ::= "CREATE" "INDEX" <index_name> "ON" <table_name> "(" <column_name> ")"
+<create_index_stmt> ::= "CREATE" "INDEX" <index_name> "ON" <table_name> "(" <column_name> ("," <column_name>)* ")"
 
 <data_type>        ::= "INT" | "STRING"
 

@@ -464,8 +464,7 @@ public class SelectStatement extends Statement {
     private List<Record> chooseSingleTableAccessPath(Table table) throws DBMSException {
         List<Record> whereIndexedRecords = table.indexedRecordsFor(getWhereClause());
         if (canUseOrderIndex(table)) {
-            String columnName = unqualifiedColumnName(orderByItems.get(0).getColumn().getColumnName().getName());
-            List<Record> orderedRecords = table.orderedRecordsFor(columnName, orderByItems.get(0).isAscending());
+            List<Record> orderedRecords = table.orderedRecordsFor(orderByColumnNames(), orderByItems.get(0).isAscending());
             if (whereIndexedRecords == null) {
                 return orderedRecords;
             }
@@ -475,11 +474,10 @@ public class SelectStatement extends Statement {
     }
 
     private boolean canUseOrderIndex(Table table) throws DBMSException {
-        if (orderByItems.size() != 1 || isGroupedQuery()) {
+        if (orderByItems.isEmpty() || isGroupedQuery() || !hasUniformOrderDirection()) {
             return false;
         }
-        String columnName = unqualifiedColumnName(orderByItems.get(0).getColumn().getColumnName().getName());
-        if (!table.hasIndexOnColumn(columnName)) {
+        if (!table.hasIndexStartingWithColumns(orderByColumnNames())) {
             return false;
         }
         int rowCount = Math.max(1, table.getRowCount());
@@ -551,6 +549,24 @@ public class SelectStatement extends Statement {
     private String unqualifiedColumnName(String name) {
         int dotIndex = name.indexOf('.');
         return dotIndex < 0 ? name : name.substring(dotIndex + 1);
+    }
+
+    private List<String> orderByColumnNames() {
+        List<String> columnNames = new ArrayList<>();
+        for (OrderByItem item : orderByItems) {
+            columnNames.add(unqualifiedColumnName(item.getColumn().getColumnName().getName()));
+        }
+        return columnNames;
+    }
+
+    private boolean hasUniformOrderDirection() {
+        boolean ascending = orderByItems.get(0).isAscending();
+        for (OrderByItem item : orderByItems) {
+            if (item.isAscending() != ascending) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private List<String> buildHeaders(SelectedColumnList selectedColumnList, Table table) {
