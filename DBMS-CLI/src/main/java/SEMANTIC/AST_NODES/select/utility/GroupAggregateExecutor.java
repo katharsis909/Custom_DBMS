@@ -49,7 +49,7 @@ public class GroupAggregateExecutor {
             groupResults.add(new GroupResult(first, row));
         }
 
-        sortEngine.sortGroupResultsIfNeeded(groupResults, orderByItems);
+        sortEngine.sortGroupResultsIfNeeded(groupResults, orderByItems, selectedColumnList);
         for (GroupResult groupResult : groupResults) {
             rows.add(groupResult.row);
         }

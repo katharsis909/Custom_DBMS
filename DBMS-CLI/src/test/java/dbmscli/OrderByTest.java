@@ -177,6 +177,45 @@ class OrderByTest {
         }
     }
 
+    @Test
+    void groupedSelectOrdersByAggregateFunction() throws Exception {
+        String table = uniqueTableName("order_agg_fn");
+        try {
+            DbmsCliEngine engine = new DbmsCliEngine();
+            engine.execute("CREATE TABLE " + table + " (id INT PRIMARY KEY, category STRING, amount INT);");
+            engine.execute("INSERT INTO " + table + " (1, 'hardware', 20);");
+            engine.execute("INSERT INTO " + table + " (2, 'book', 10);");
+            engine.execute("INSERT INTO " + table + " (3, 'hardware', 50);");
+            engine.execute("INSERT INTO " + table + " (4, 'hardware', 10);");
+
+            QueryResultBlock result = onlyBlock(engine,
+                    "SELECT category, COUNT(*) FROM " + table + " GROUP BY category ORDER BY COUNT(*) DESC;");
+
+            assertEquals(List.of(List.of("hardware", "3"), List.of("book", "1")), result.getRows());
+        } finally {
+            deleteRecursively(tableDir(table));
+        }
+    }
+
+    @Test
+    void groupedSelectOrdersByAggregateAlias() throws Exception {
+        String table = uniqueTableName("order_agg_alias");
+        try {
+            DbmsCliEngine engine = new DbmsCliEngine();
+            engine.execute("CREATE TABLE " + table + " (id INT PRIMARY KEY, category STRING, amount INT);");
+            engine.execute("INSERT INTO " + table + " (1, 'hardware', 20);");
+            engine.execute("INSERT INTO " + table + " (2, 'book', 100);");
+            engine.execute("INSERT INTO " + table + " (3, 'hardware', 50);");
+
+            QueryResultBlock result = onlyBlock(engine,
+                    "SELECT category, SUM(amount) AS total FROM " + table + " GROUP BY category ORDER BY total ASC;");
+
+            assertEquals(List.of(List.of("hardware", "70"), List.of("book", "100")), result.getRows());
+        } finally {
+            deleteRecursively(tableDir(table));
+        }
+    }
+
     private static QueryResultBlock onlyBlock(DbmsCliEngine engine, String sql) throws Exception {
         var result = engine.executeStructured(sql);
         assertEquals(1, result.getBlocks().size());
