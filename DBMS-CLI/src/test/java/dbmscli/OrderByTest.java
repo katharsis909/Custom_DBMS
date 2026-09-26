@@ -105,6 +105,30 @@ class OrderByTest {
     }
 
     @Test
+    void selectCanUseReverseScanOnMixedDirectionIndexForOrderBy() throws Exception {
+        String table = uniqueTableName("order_mixed_rev_idx");
+        try {
+            DbmsCliEngine engine = new DbmsCliEngine();
+            engine.execute("CREATE TABLE " + table + " (id INT PRIMARY KEY, age INT, name STRING);");
+            engine.execute("CREATE INDEX age_name_idx_" + System.nanoTime() + " ON " + table + " (age ASC, name DESC);");
+            engine.execute("INSERT INTO " + table + " (1, 20, 'bob');");
+            engine.execute("INSERT INTO " + table + " (2, 20, 'charlie');");
+            engine.execute("INSERT INTO " + table + " (3, 10, 'alice');");
+
+            QueryResultBlock result = onlyBlock(engine,
+                    "SELECT age, name FROM " + table + " ORDER BY age DESC, name ASC;");
+
+            assertEquals(List.of(
+                    List.of("20", "bob"),
+                    List.of("20", "charlie"),
+                    List.of("10", "alice")
+            ), result.getRows());
+        } finally {
+            deleteRecursively(tableDir(table));
+        }
+    }
+
+    @Test
     void joinOrdersByQualifiedAliasColumns() throws Exception {
         String authors = uniqueTableName("order_authors");
         String books = uniqueTableName("order_books");
