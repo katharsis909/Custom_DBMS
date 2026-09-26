@@ -144,10 +144,10 @@ public class SelectStatement extends Statement {
                 table, whereClause, orderByItems, groupExecutor.isGroupedQuery(selectedColumnList, groupByColumns)
         );
         if (accessPath.useOrderIndex) {
+            QUERY_PLANNER.OrderIndexMatch orderMatch = accessPathPlanner.findOrderIndexMatch(table, orderByItems, groupExecutor.isGroupedQuery(selectedColumnList, groupByColumns));
             List<String> indexedColumns = accessPathPlanner.orderByColumnNames(orderByItems).subList(0, accessPath.orderPrefixLength);
-            List<Record> orderedRecords = table.orderedRecordsFor(indexedColumns, orderByItems.get(0).isAscending());
-            boolean completeOrderByCovered = accessPath.orderPrefixLength == orderByItems.size();
-            return new SingleTableRows(filterMatchingRecords(orderedRecords), completeOrderByCovered);
+            List<Record> orderedRecords = table.orderedRecordsFor(indexedColumns, orderMatch.scanAscending);
+            return new SingleTableRows(filterMatchingRecords(orderedRecords), orderMatch.completeCovered);
         }
         if (accessPath.useWhereIndex) {
             return new SingleTableRows(filterMatchingRecords(table.indexedRecordsFor(getWhereClause())), false);

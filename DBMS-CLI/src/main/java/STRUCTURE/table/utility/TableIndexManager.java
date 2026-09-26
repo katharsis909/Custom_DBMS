@@ -77,6 +77,14 @@ public class TableIndexManager {
     }
 
     public void createIndex(String indexName, List<String> columnNames, TableSchema schema, Table table) throws DBMSException {
+        List<Boolean> defaultDirections = new ArrayList<>();
+        for (int i = 0; i < columnNames.size(); i++) {
+            defaultDirections.add(true);
+        }
+        createIndex(indexName, columnNames, defaultDirections, schema, table);
+    }
+
+    public void createIndex(String indexName, List<String> columnNames, List<Boolean> columnDirections, TableSchema schema, Table table) throws DBMSException {
         validateIndexColumns(columnNames, schema);
         for (IndexDefinition index : indexes) {
             if (index.indexName.equals(indexName)) {
@@ -84,7 +92,7 @@ public class TableIndexManager {
             }
         }
 
-        IndexDefinition index = new IndexDefinition(indexName, columnNames);
+        IndexDefinition index = new IndexDefinition(indexName, columnNames, columnDirections);
         BPlusTreeDiskStore<String, RowPointer> indexStore = createIndexStore(indexName);
         indexStore.save(new BPlusTree<>(4));
 
@@ -92,7 +100,7 @@ public class TableIndexManager {
         while (tableIterator.hasNext()) {
             RowPointer pointer = tableIterator.nextPointer();
             Record record = tableIterator.next();
-            indexStore.insert(IndexKeyCodec.indexKey(record, index.columnNames), pointer);
+            indexStore.insert(IndexKeyCodec.indexKey(record, index.columnNames, index.columnDirections), pointer);
         }
 
         indexes.add(index);
@@ -105,7 +113,7 @@ public class TableIndexManager {
             primaryKeyIndex.insert(primaryKey, rowPointer);
         }
         for (IndexDefinition index : indexes) {
-            createIndexStore(index.indexName).insert(IndexKeyCodec.indexKey(record, index.columnNames), rowPointer);
+            createIndexStore(index.indexName).insert(IndexKeyCodec.indexKey(record, index.columnNames, index.columnDirections), rowPointer);
         }
     }
 
@@ -144,7 +152,8 @@ public class TableIndexManager {
                 if (parts.length != 2) {
                     throw new DBMSException("Invalid index entry in table '" + tableName + "': " + line);
                 }
-                indexes.add(new IndexDefinition(parts[0], parseIndexColumns(parts[1], line)));
+                ParsedIndexSpec spec = parseIndexSpec(parts[1], line);
+                indexes.add(new IndexDefinition(parts[0], spec.names, spec.directions));
             }
         } catch (IOException e) {
             throw new DBMSException("Could not load indexes for table '" + tableName + "'.", e);
@@ -155,7 +164,12 @@ public class TableIndexManager {
         File file = new File(new File("data", tableName), "indexes.txt");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             for (IndexDefinition index : indexes) {
-                writer.write(index.indexName + "\t" + String.join(",", index.columnNames));
+                List<String> specs = new ArrayList<>();
+                for (int i = 0; i < index.columnNames.size(); i++) {
+                    boolean asc = index.isAscending(i);
+                    specs.add(index.columnNames.get(i) + (asc ? " ASC" : " DESC"));
+                }
+                writer.write(index.indexName + "\t" + String.join(",", specs));
                 writer.newLine();
             }
         } catch (IOException e) {
@@ -191,17 +205,28 @@ public class TableIndexManager {
         return true;
     }
 
-    private List<String> parseIndexColumns(String columns, String rawLine) throws DBMSException {
-        List<String> parsedColumns = new ArrayList<>();
+    private static class ParsedIndexSpec {
+        final List<String> names = new ArrayList<>();
+        final List<Boolean> directions = new ArrayList<>();
+    }
+
+    private ParsedIndexSpec parseIndexSpec(String columns, String rawLine) throws DBMSException {
+        ParsedIndexSpec spec = new ParsedIndexSpec();
         for (String column : columns.split(",")) {
             String trimmedColumn = column.trim();
             if (!trimmedColumn.isEmpty()) {
-                parsedColumns.add(trimmedColumn);
+                String[] parts = trimmedColumn.split("\\s+");
+                spec.names.add(parts[0]);
+                boolean asc = true;
+                if (parts.length > 1 && parts[1].equalsIgnoreCase("DESC")) {
+                    asc = false;
+                }
+                spec.directions.add(asc);
             }
         }
-        if (parsedColumns.isEmpty()) {
+        if (spec.names.isEmpty()) {
             throw new DBMSException("Invalid index entry in table '" + tableName + "': " + rawLine);
         }
-        return parsedColumns;
+        return spec;
     }
 }

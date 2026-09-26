@@ -124,6 +124,8 @@ class StatementBodyParserTest {
                 token(TokenType.ON, "ON", 25),
                 token(TokenType.LPAREN, "(", 37),
                 token(TokenType.COMMA, ",", 41),
+                token(TokenType.COMMA, ",", 41),
+                token(TokenType.RPAREN, ")", 47),
                 token(TokenType.RPAREN, ")", 47),
                 token(TokenType.RPAREN, ")", 47));
         doNothing().when(ctx).advance();

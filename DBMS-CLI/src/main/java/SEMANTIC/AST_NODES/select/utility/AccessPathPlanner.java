@@ -1,5 +1,6 @@
 package SEMANTIC.AST_NODES.select.utility;
 
+import QUERY_PLANNER.OrderIndexMatch;
 import SEMANTIC.AST_NODES.OrderByItem;
 import SEMANTIC.AST_NODES.SingleTableAccessPath;
 import SEMANTIC.AST_NODES.WhereClause;
@@ -19,7 +20,9 @@ public class AccessPathPlanner {
     ) throws DBMSException {
         boolean hasWhereIndexPath = table.hasUsableIndexForWhere(whereClause);
         boolean whereIndexCoversAllWhereColumns = table.hasSingleIndexCoveringWhereColumns(whereClause);
-        int orderIndexPrefixLength = usableOrderIndexPrefixLength(table, orderByItems, isGroupedQuery);
+
+        OrderIndexMatch orderMatch = findOrderIndexMatch(table, orderByItems, isGroupedQuery);
+        int orderIndexPrefixLength = orderMatch.prefixLength;
         boolean hasOrderIndexPath = orderIndexPrefixLength > 0;
 
         if (!hasOrderIndexPath) {
@@ -39,11 +42,28 @@ public class AccessPathPlanner {
         return SingleTableAccessPath.orderIndex(orderIndexPrefixLength);
     }
 
-    public int usableOrderIndexPrefixLength(Table table, List<OrderByItem> orderByItems, boolean isGroupedQuery) {
-        if (orderByItems.isEmpty() || isGroupedQuery || !hasUniformOrderDirection(orderByItems)) {
-            return 0;
+    public OrderIndexMatch findOrderIndexMatch(Table table, List<OrderByItem> orderByItems, boolean isGroupedQuery) {
+        if (orderByItems.isEmpty() || isGroupedQuery) {
+            return OrderIndexMatch.none();
         }
-        return table.longestIndexPrefixForColumns(orderByColumnNames(orderByItems));
+        OrderIndexMatch match = table.findBestOrderIndexMatch(orderByItems);
+        if (match != null && match.prefixLength > 0) {
+            return match;
+        }
+
+        List<String> orderCols = orderByColumnNames(orderByItems);
+        int prefixLen = table.longestIndexPrefixForColumns(orderCols);
+        if (prefixLen > 0) {
+            boolean scanAsc = orderByItems.get(0).isAscending();
+            boolean complete = prefixLen == orderByItems.size();
+            return new OrderIndexMatch(null, prefixLen, scanAsc, complete);
+        }
+
+        return match != null ? match : OrderIndexMatch.none();
+    }
+
+    public int usableOrderIndexPrefixLength(Table table, List<OrderByItem> orderByItems, boolean isGroupedQuery) {
+        return findOrderIndexMatch(table, orderByItems, isGroupedQuery).prefixLength;
     }
 
     public List<String> orderByColumnNames(List<OrderByItem> orderByItems) {
@@ -52,19 +72,6 @@ public class AccessPathPlanner {
             columnNames.add(unqualifiedColumnName(item.getColumn().getColumnName().getName()));
         }
         return columnNames;
-    }
-
-    public boolean hasUniformOrderDirection(List<OrderByItem> orderByItems) {
-        if (orderByItems.isEmpty()) {
-            return true;
-        }
-        boolean ascending = orderByItems.get(0).isAscending();
-        for (OrderByItem item : orderByItems) {
-            if (item.isAscending() != ascending) {
-                return false;
-            }
-        }
-        return true;
     }
 
     public boolean hasMultipleOrderConditions(List<OrderByItem> orderByItems) {

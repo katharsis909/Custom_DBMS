@@ -33,11 +33,13 @@ public class CreateIndexStatementParser {
         ctx.advance();
 
         List<Identifier> columnNames = new ArrayList<>();
-        columnNames.add(IdentifierParser.parse(ctx));
+        List<Boolean> columnDirections = new ArrayList<>();
+
+        parseIndexColumn(ctx, columnNames, columnDirections);
 
         while (ctx.current().getType() == TokenType.COMMA) {
             ctx.advance();
-            columnNames.add(IdentifierParser.parse(ctx));
+            parseIndexColumn(ctx, columnNames, columnDirections);
         }
 
         if (ctx.current().getType() != TokenType.RPAREN) {
@@ -50,6 +52,20 @@ public class CreateIndexStatementParser {
         statement.setIndexName(indexName);
         statement.setTableName(tableName);
         statement.setColumnNames(columnNames);
+        statement.setColumnDirections(columnDirections);
         return statement;
+    }
+
+    private static void parseIndexColumn(ParserContext ctx, List<Identifier> columnNames, List<Boolean> columnDirections) throws ParseException, LexerException {
+        columnNames.add(IdentifierParser.parse(ctx));
+        TokenType type = ctx.current().getType();
+        boolean asc = true;
+        if (type == TokenType.ASC) {
+            ctx.advance();
+        } else if (type == TokenType.DESC) {
+            asc = false;
+            ctx.advance();
+        }
+        columnDirections.add(asc);
     }
 }

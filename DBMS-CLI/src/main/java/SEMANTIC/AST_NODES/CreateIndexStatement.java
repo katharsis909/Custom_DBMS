@@ -13,6 +13,7 @@ public class CreateIndexStatement extends Statement {
     private Identifier indexName;
     private Identifier tableName;
     private List<Identifier> columnNames = new ArrayList<>();
+    private List<Boolean> columnDirections = new ArrayList<>(); // true = ASC, false = DESC
 
     public Identifier getIndexName() {
         return indexName;
@@ -38,15 +39,27 @@ public class CreateIndexStatement extends Statement {
         this.columnNames = new ArrayList<>(columnNames);
     }
 
+    public List<Boolean> getColumnDirections() {
+        return new ArrayList<>(columnDirections);
+    }
+
+    public void setColumnDirections(List<Boolean> columnDirections) {
+        this.columnDirections = new ArrayList<>(columnDirections);
+    }
+
     @Override
-        public QueryResultBlock execute(Catalog catalog) throws DBMSException {
+    public QueryResultBlock execute(Catalog catalog) throws DBMSException {
         try {
             Table table = catalog.getTable(tableName.getName());
             List<String> indexColumns = new ArrayList<>();
             for (Identifier columnName : columnNames) {
                 indexColumns.add(columnName.getName());
             }
-            table.createIndex(indexName.getName(), indexColumns);
+            if (columnDirections == null || columnDirections.isEmpty()) {
+                table.createIndex(indexName.getName(), indexColumns);
+            } else {
+                table.createIndex(indexName.getName(), indexColumns, columnDirections);
+            }
         } catch (DBMSException exception) {
             throw attachPosition(exception, getSourcePosition());
         }

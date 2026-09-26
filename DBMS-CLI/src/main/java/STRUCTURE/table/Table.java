@@ -1,7 +1,9 @@
 package STRUCTURE.table;
 
 import QUERY_PLANNER.IndexedAccess;
+import QUERY_PLANNER.OrderIndexMatch;
 import QUERY_PLANNER.TableIndexPlanner;
+import SEMANTIC.AST_NODES.OrderByItem;
 import SEMANTIC.AST_NODES.WhereClause;
 import STRUCTURE.Catalog;
 import STRUCTURE.Column;
@@ -88,6 +90,10 @@ public class Table {
         indexManager.createIndex(indexName, columnNames, schema, this);
     }
 
+    public void createIndex(String indexName, List<String> columnNames, List<Boolean> columnDirections) throws DBMSException {
+        indexManager.createIndex(indexName, columnNames, columnDirections, schema, this);
+    }
+
     public List<Record> indexedRecordsFor(WhereClause whereClause) throws DBMSException {
         IndexedAccess access = planner.bestIndexedAccess(whereClause);
         if (access == null) {
@@ -113,6 +119,10 @@ public class Table {
 
     public boolean hasSingleIndexCoveringWhereColumns(WhereClause whereClause) throws DBMSException {
         return planner.hasSingleIndexCoveringWhereColumns(whereClause);
+    }
+
+    public OrderIndexMatch findBestOrderIndexMatch(List<OrderByItem> orderByItems) {
+        return planner.findBestOrderIndexMatch(orderByItems);
     }
 
     public List<Record> orderedRecordsFor(List<String> columnNames, boolean ascending) throws DBMSException {

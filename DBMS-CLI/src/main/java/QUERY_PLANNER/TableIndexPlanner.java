@@ -1,5 +1,6 @@
 package QUERY_PLANNER;
 
+import SEMANTIC.AST_NODES.OrderByItem;
 import SEMANTIC.AST_NODES.UnaryCondition;
 import SEMANTIC.AST_NODES.WhereClause;
 import STRUCTURE.DBMSException;
@@ -78,15 +79,74 @@ public class TableIndexPlanner {
         return longestPrefix;
     }
 
+    public OrderIndexMatch findBestOrderIndexMatch(List<OrderByItem> orderByItems) {
+        if (orderByItems == null || orderByItems.isEmpty()) {
+            return OrderIndexMatch.none();
+        }
+
+        OrderIndexMatch bestMatch = OrderIndexMatch.none();
+
+        for (IndexDefinition index : indexManager.candidateIndexes(schema.getPrimaryKeyColumns())) {
+            int forwardCount = 0;
+            int reverseCount = 0;
+            int maxComparable = Math.min(index.columnNames.size(), orderByItems.size());
+
+            // Check forward scan
+            for (int i = 0; i < maxComparable; i++) {
+                String reqCol = unqualifiedColumnName(orderByItems.get(i).getColumn().getColumnName().getName());
+                boolean reqAsc = orderByItems.get(i).isAscending();
+                String indexCol = index.columnNames.get(i);
+                boolean indexAsc = index.isAscending(i);
+
+                if (reqCol.equals(indexCol) && reqAsc == indexAsc) {
+                    forwardCount++;
+                } else {
+                    break;
+                }
+            }
+
+            // Check reverse scan (flips all index column directions)
+            for (int i = 0; i < maxComparable; i++) {
+                String reqCol = unqualifiedColumnName(orderByItems.get(i).getColumn().getColumnName().getName());
+                boolean reqAsc = orderByItems.get(i).isAscending();
+                String indexCol = index.columnNames.get(i);
+                boolean indexAsc = index.isAscending(i);
+
+                if (reqCol.equals(indexCol) && reqAsc == !indexAsc) {
+                    reverseCount++;
+                } else {
+                    break;
+                }
+            }
+
+            if (forwardCount >= reverseCount && forwardCount > bestMatch.prefixLength) {
+                bestMatch = new OrderIndexMatch(index, forwardCount, true, forwardCount == orderByItems.size());
+            } else if (reverseCount > forwardCount && reverseCount > bestMatch.prefixLength) {
+                bestMatch = new OrderIndexMatch(index, reverseCount, false, reverseCount == orderByItems.size());
+            }
+        }
+
+        return bestMatch;
+    }
+
     private IndexedLookup buildLookup(IndexDefinition index, WhereClause whereClause) throws DBMSException {
         if (index.columnNames.size() == 1) {
+            boolean asc = index.isAscending(0);
             ColumnBounds bounds = boundsForColumn(whereClause, index.columnNames.get(0));
             if (bounds.equalityKey != null) {
-                return IndexedLookup.equality(bounds.equalityKey, 3);
+                String eqKey = asc ? bounds.equalityKey : IndexKeyCodec.invert(bounds.equalityKey);
+                return IndexedLookup.equality(eqKey, 3);
             }
             if (bounds.lowerKey != null || bounds.upperKey != null) {
-                String lowerKey = bounds.lowerKey == null ? "" : bounds.lowerKey;
-                String upperKey = bounds.upperKey == null ? String.valueOf(Character.MAX_VALUE) : bounds.upperKey;
+                String encLower = bounds.lowerKey == null ? null : (asc ? bounds.lowerKey : IndexKeyCodec.invert(bounds.lowerKey));
+                String encUpper = bounds.upperKey == null ? null : (asc ? bounds.upperKey : IndexKeyCodec.invert(bounds.upperKey));
+                if (!asc) {
+                    String temp = encLower;
+                    encLower = encUpper;
+                    encUpper = temp;
+                }
+                String lowerKey = encLower == null ? "" : encLower;
+                String upperKey = encUpper == null ? String.valueOf(Character.MAX_VALUE) : encUpper;
                 return IndexedLookup.range(lowerKey, upperKey, 1);
             }
             return null;
@@ -95,22 +155,32 @@ public class TableIndexPlanner {
         List<String> equalityPrefix = new ArrayList<>();
         int equalityColumns = 0;
 
-        for (String columnName : index.columnNames) {
+        for (int i = 0; i < index.columnNames.size(); i++) {
+            String columnName = index.columnNames.get(i);
+            boolean asc = index.isAscending(i);
             ColumnBounds bounds = boundsForColumn(whereClause, columnName);
             if (bounds.equalityKey != null) {
-                equalityPrefix.add(IndexKeyCodec.encodeIndexComponent(bounds.equalityKey));
+                String eqKey = asc ? bounds.equalityKey : IndexKeyCodec.invert(bounds.equalityKey);
+                equalityPrefix.add(IndexKeyCodec.encodeIndexComponent(eqKey));
                 equalityColumns++;
                 continue;
             }
 
             if (bounds.lowerKey != null || bounds.upperKey != null) {
                 String prefix = IndexKeyCodec.joinIndexPrefix(equalityPrefix);
-                String lowerKey = bounds.lowerKey == null
+                String encLower = bounds.lowerKey == null ? null : (asc ? bounds.lowerKey : IndexKeyCodec.invert(bounds.lowerKey));
+                String encUpper = bounds.upperKey == null ? null : (asc ? bounds.upperKey : IndexKeyCodec.invert(bounds.upperKey));
+                if (!asc) {
+                    String temp = encLower;
+                    encLower = encUpper;
+                    encUpper = temp;
+                }
+                String lowerKey = encLower == null
                         ? prefix
-                        : prefix + IndexKeyCodec.encodeIndexComponent(bounds.lowerKey);
-                String upperKey = bounds.upperKey == null
+                        : prefix + IndexKeyCodec.encodeIndexComponent(encLower);
+                String upperKey = encUpper == null
                         ? prefix + Character.MAX_VALUE
-                        : prefix + IndexKeyCodec.encodeIndexComponent(bounds.upperKey) + Character.MAX_VALUE;
+                        : prefix + IndexKeyCodec.encodeIndexComponent(encUpper) + Character.MAX_VALUE;
                 return IndexedLookup.range(lowerKey, upperKey, (equalityColumns * 2) + 1);
             }
             break;
