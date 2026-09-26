@@ -3,7 +3,7 @@ package SEMANTIC.AST_NODES;
 import SEMANTIC.AST_NODES.LEAF_NODES.Identifier;
 import STRUCTURE.Catalog;
 import STRUCTURE.DBMSException;
-import STRUCTURE.Table;
+import STRUCTURE.table.Table;
 import dbmscli.result.QueryResultBlock;
 
 import java.util.ArrayList;

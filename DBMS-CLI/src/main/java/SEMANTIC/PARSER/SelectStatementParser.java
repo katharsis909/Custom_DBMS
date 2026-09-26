@@ -1,7 +1,7 @@
 package SEMANTIC.PARSER;
 
 import LEXICAL.LexerException;
-import SEMANTIC.AST_NODES.SelectStatement;
+import SEMANTIC.AST_NODES.select.SelectStatement;
 import SEMANTIC.AST_NODES.SelectedColumnList;
 import SEMANTIC.AST_NODES.JoinClause;
 import SEMANTIC.AST_NODES.WhereClause;

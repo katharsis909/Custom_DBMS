@@ -74,6 +74,7 @@ data/
 Top-down persistence documentation:
 - [Disk Persistence Architecture](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/Disk-Persistence-Architecture.md)
 - [disk_persistence Package](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/disk_persistence/README.md)
+- [Index Planning & Lookup Architecture Notes](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/Index-Planning-Notes.md)
 
 Testing documentation:
 - [Testing](/Users/megha_shah/Documents/Ren_Proj/DBMS/Documentation/Testing.md)

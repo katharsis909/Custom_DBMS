@@ -5,7 +5,7 @@ import STRUCTURE.DBMSException;
 import STRUCTURE.MyInt;
 import STRUCTURE.MyString;
 import STRUCTURE.Record;
-import STRUCTURE.Table;
+import STRUCTURE.table.Table;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;

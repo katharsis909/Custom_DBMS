@@ -1,5 +1,6 @@
 package STRUCTURE;
 
+import STRUCTURE.table.Table;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +14,7 @@ public class Catalog {
         loadTables();
     }
 
-    public synchronized void addTable(String tableName, java.util.List<Column> schema) throws DBMSException {
+    public void addTable(String tableName, java.util.List<Column> schema) throws DBMSException {
         String key = tableName.toUpperCase();
         if (tables.containsKey(key)) {
             throw new DBMSException("Table '" + key + "' already exists.");
@@ -23,7 +24,7 @@ public class Catalog {
         tables.put(key, table);
     }
 
-    public synchronized Table getTable(String name) throws DBMSException
+    public Table getTable(String name) throws DBMSException
     {
         String key = name.toUpperCase();
         if (!tables.containsKey(key)) {
@@ -32,7 +33,7 @@ public class Catalog {
         return tables.get(key);
     }
 
-    public synchronized void dropTable(String name) throws DBMSException
+    public void dropTable(String name) throws DBMSException
     {
         String key = name.toUpperCase();
         Table table = tables.remove(key);

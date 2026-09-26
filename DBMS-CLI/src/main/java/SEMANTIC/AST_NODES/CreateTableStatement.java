@@ -93,7 +93,7 @@ public class CreateTableStatement extends Statement {
             if (!column.hasForeignKey()) {
                 continue;
             }
-            STRUCTURE.Table referencedTable = catalog.getTable(column.getForeignTableName());
+            STRUCTURE.table.Table referencedTable = catalog.getTable(column.getForeignTableName());
             boolean referencedColumnExists = false;
             for (Column referencedColumn : referencedTable.getColumnList()) {
                 if (referencedColumn.getColumnName().equals(column.getForeignColumnName())) {

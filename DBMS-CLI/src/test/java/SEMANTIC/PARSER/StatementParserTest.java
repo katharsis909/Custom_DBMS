@@ -14,7 +14,7 @@ import LEXICAL.TokenType;
 import SEMANTIC.AST_NODES.CreateTableStatement;
 import SEMANTIC.AST_NODES.DropTableStatement;
 import SEMANTIC.AST_NODES.InsertIntoStatement;
-import SEMANTIC.AST_NODES.SelectStatement;
+import SEMANTIC.AST_NODES.select.SelectStatement;
 import SEMANTIC.AST_NODES.Statement;
 import SEMANTIC.PARSER.Exception.ParseException;
 import SEMANTIC.PARSER.util.ParserContext;

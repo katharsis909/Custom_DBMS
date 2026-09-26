@@ -24,7 +24,7 @@ import SEMANTIC.AST_NODES.CreateTableStatement;
 import SEMANTIC.AST_NODES.DropTableStatement;
 import SEMANTIC.AST_NODES.InsertIntoStatement;
 import SEMANTIC.AST_NODES.SelectedColumnList;
-import SEMANTIC.AST_NODES.SelectStatement;
+import SEMANTIC.AST_NODES.select.SelectStatement;
 import SEMANTIC.AST_NODES.ValueList;
 import SEMANTIC.AST_NODES.WhereClause;
 import SEMANTIC.AST_NODES.LEAF_NODES.Identifier;

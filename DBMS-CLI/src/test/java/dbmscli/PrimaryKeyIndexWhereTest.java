@@ -3,7 +3,7 @@ package dbmscli;
 import dbmscli.result.ExecutionResult;
 import dbmscli.result.QueryResultBlock;
 import org.junit.jupiter.api.Test;
-import STRUCTURE.Table;
+import STRUCTURE.table.Table;
 
 import java.io.IOException;
 import java.nio.file.Files;

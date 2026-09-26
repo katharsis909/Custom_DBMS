@@ -6,7 +6,7 @@ import SEMANTIC.AST_NODES.CreateTableStatement;
 import SEMANTIC.AST_NODES.DataType;
 import SEMANTIC.AST_NODES.InsertIntoStatement;
 import SEMANTIC.AST_NODES.Operator;
-import SEMANTIC.AST_NODES.SelectStatement;
+import SEMANTIC.AST_NODES.select.SelectStatement;
 import SEMANTIC.AST_NODES.SelectedColumnList;
 import SEMANTIC.AST_NODES.UnaryCondition;
 import SEMANTIC.AST_NODES.Value;
@@ -21,7 +21,7 @@ import STRUCTURE.Catalog;
 import STRUCTURE.DBMSException;
 import STRUCTURE.MyInt;
 import STRUCTURE.MyString;
-import STRUCTURE.Table;
+import STRUCTURE.table.Table;
 import dbmscli.result.QueryResultBlock;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -107,7 +107,7 @@ public class StatementBenchmark {
 
             catalog = new Catalog();
             createStudentsTable(catalog, tableName);
-            preloadRows(catalog.getTable(tableName), rowCount);
+            preloadRows(catalog.getTable(tableName), catalog, rowCount);
 
             selectAll = buildSelect(tableName, true, null, null);
             selectSingleColumn = buildSelect(tableName, false, List.of("name"), null);
@@ -158,12 +158,12 @@ public class StatementBenchmark {
         create.execute(catalog);
     }
 
-    private static void preloadRows(Table table, int rowCount) throws DBMSException {
+    private static void preloadRows(Table table, Catalog catalog, int rowCount) throws DBMSException {
         for (int i = 1; i <= rowCount; i++) {
             table.addRecord(List.of(
                     MyInt.convtoDB_DT(Integer.toString(i)),
                     MyString.convtoDB_DT(paddedName(i))
-            ));
+            ), catalog);
         }
     }
 

@@ -3,7 +3,7 @@ package SEMANTIC.AST_NODES;
 import STRUCTURE.DBMSDataType;
 import STRUCTURE.DBMSException;
 import STRUCTURE.Record;
-import STRUCTURE.Table;
+import STRUCTURE.table.Table;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -11,7 +11,8 @@ import STRUCTURE.DBMSException;
 import STRUCTURE.MyInt;
 import STRUCTURE.MyString;
 import STRUCTURE.Record;
-import STRUCTURE.Table;
+import STRUCTURE.table.Table;
+import SEMANTIC.AST_NODES.select.SelectStatement;
 import dbmscli.result.ExecutionResult;
 import dbmscli.result.QueryResultBlock;
 import disk_persistence.TableIterator;
@@ -434,6 +435,132 @@ class AstNodeTest {
         assertEquals(72, exception.getPosition());
     }
 
+    @Test
+    void selectStatementPrefersOrderPathForMultipleOrderColumns() throws Exception {
+        Catalog catalog = mock(Catalog.class);
+        Table table = mock(Table.class);
+        SelectedColumnList selectedColumnList = mock(SelectedColumnList.class);
+        Record first = new Record();
+        Record second = new Record();
+
+        when(catalog.getTable("students")).thenReturn(table);
+        when(table.hasUsableIndexForWhere(null)).thenReturn(false);
+        when(table.hasSingleIndexCoveringWhereColumns(null)).thenReturn(false);
+        when(table.longestIndexPrefixForColumns(List.of("age", "name"))).thenReturn(2);
+        when(table.orderedRecordsFor(List.of("age", "name"), true)).thenReturn(List.of(first, second));
+        when(selectedColumnList.evaluate(first, table)).thenReturn(List.of(MyInt.convtoDB_DT("20"), MyString.convtoDB_DT("ada")));
+        when(selectedColumnList.evaluate(second, table)).thenReturn(List.of(MyInt.convtoDB_DT("20"), MyString.convtoDB_DT("grace")));
+        when(selectedColumnList.getColumns()).thenReturn(List.of(columnMention("age"), columnMention("name")));
+
+        SelectStatement statement = new SelectStatement();
+        statement.setTableName(identifier("students"));
+        statement.setSelectedColumnList(selectedColumnList);
+        statement.setOrderByItems(List.of(orderBy("age", true), orderBy("name", true)));
+
+        QueryResultBlock result = statement.execute(catalog);
+
+        assertEquals(List.of(List.of("20", "ada"), List.of("20", "grace")), result.getRows());
+        verify(table).orderedRecordsFor(List.of("age", "name"), true);
+        verify(table, never()).iterator();
+    }
+
+    @Test
+    void selectStatementPrefersWherePathForMultipleWhereConditionsEvenWhenOrderIndexExists() throws Exception {
+        Catalog catalog = mock(Catalog.class);
+        Table table = mock(Table.class);
+        SelectedColumnList selectedColumnList = mock(SelectedColumnList.class);
+        WhereClause whereClause = mock(WhereClause.class);
+        Record whereRecord = new Record();
+        Record orderedRecord = new Record();
+        ConditionList conditionList = new ConditionList(List.of(mock(UnaryCondition.class), mock(UnaryCondition.class)));
+
+        when(catalog.getTable("students")).thenReturn(table);
+        when(whereClause.getConditions()).thenReturn(conditionList);
+        when(table.hasUsableIndexForWhere(whereClause)).thenReturn(true);
+        when(table.hasSingleIndexCoveringWhereColumns(whereClause)).thenReturn(true);
+        when(table.indexedRecordsFor(whereClause)).thenReturn(List.of(whereRecord));
+        when(table.longestIndexPrefixForColumns(List.of("age"))).thenReturn(1);
+        when(whereClause.evaluate(whereRecord)).thenReturn(true);
+        when(selectedColumnList.evaluate(whereRecord, table)).thenReturn(List.of(MyString.convtoDB_DT("alice")));
+        when(selectedColumnList.getColumns()).thenReturn(List.of(columnMention("name")));
+
+        SelectStatement statement = new SelectStatement();
+        statement.setTableName(identifier("students"));
+        statement.setSelectedColumnList(selectedColumnList);
+        statement.setWhereClause(whereClause);
+        statement.setOrderByItems(List.of(orderBy("age", true)));
+
+        QueryResultBlock result = statement.execute(catalog);
+
+        assertEquals(List.of(List.of("alice")), result.getRows());
+        verify(table).indexedRecordsFor(whereClause);
+        verify(table, never()).orderedRecordsFor(List.of("age"), true);
+        verify(selectedColumnList, never()).evaluate(orderedRecord, table);
+    }
+
+    @Test
+    void selectStatementPrefersOrderPathWhenMultipleWhereConditionsHaveOnlyPartialIndexCoverage() throws Exception {
+        Catalog catalog = mock(Catalog.class);
+        Table table = mock(Table.class);
+        SelectedColumnList selectedColumnList = mock(SelectedColumnList.class);
+        WhereClause whereClause = mock(WhereClause.class);
+        Record orderedRecord = new Record();
+        ConditionList conditionList = new ConditionList(List.of(mock(UnaryCondition.class), mock(UnaryCondition.class)));
+
+        when(catalog.getTable("students")).thenReturn(table);
+        when(whereClause.getConditions()).thenReturn(conditionList);
+        when(table.hasUsableIndexForWhere(whereClause)).thenReturn(true);
+        when(table.hasSingleIndexCoveringWhereColumns(whereClause)).thenReturn(false);
+        when(table.longestIndexPrefixForColumns(List.of("age"))).thenReturn(1);
+        when(table.orderedRecordsFor(List.of("age"), true)).thenReturn(List.of(orderedRecord));
+        when(whereClause.evaluate(orderedRecord)).thenReturn(true);
+        when(selectedColumnList.evaluate(orderedRecord, table)).thenReturn(List.of(MyString.convtoDB_DT("alice")));
+        when(selectedColumnList.getColumns()).thenReturn(List.of(columnMention("name")));
+
+        SelectStatement statement = new SelectStatement();
+        statement.setTableName(identifier("students"));
+        statement.setSelectedColumnList(selectedColumnList);
+        statement.setWhereClause(whereClause);
+        statement.setOrderByItems(List.of(orderBy("age", true)));
+
+        QueryResultBlock result = statement.execute(catalog);
+
+        assertEquals(List.of(List.of("alice")), result.getRows());
+        verify(table, never()).indexedRecordsFor(whereClause);
+        verify(table).orderedRecordsFor(List.of("age"), true);
+    }
+
+    @Test
+    void selectStatementDoesNotUseOrderIndexWhenMultiColumnOrderHasOnlyOneColumnPrefix() throws Exception {
+        Catalog catalog = mock(Catalog.class);
+        Table table = mock(Table.class);
+        TableIterator iterator = mock(TableIterator.class);
+        SelectedColumnList selectedColumnList = mock(SelectedColumnList.class);
+        Record scannedRecord = new Record();
+
+        when(catalog.getTable("students")).thenReturn(table);
+        when(table.hasUsableIndexForWhere(null)).thenReturn(false);
+        when(table.hasSingleIndexCoveringWhereColumns(null)).thenReturn(false);
+        when(table.longestIndexPrefixForColumns(List.of("age", "name"))).thenReturn(1);
+        when(table.iterator()).thenReturn(iterator);
+        when(iterator.hasNext()).thenReturn(true, false);
+        when(iterator.next()).thenReturn(scannedRecord);
+        when(selectedColumnList.evaluate(scannedRecord, table)).thenReturn(List.of(MyInt.convtoDB_DT("20"), MyString.convtoDB_DT("ada")));
+        when(selectedColumnList.getColumns()).thenReturn(List.of(columnMention("age"), columnMention("name")));
+
+        SelectStatement statement = new SelectStatement();
+        statement.setTableName(identifier("students"));
+        statement.setSelectedColumnList(selectedColumnList);
+        statement.setOrderByItems(List.of(orderBy("age", true), orderBy("name", true)));
+
+        QueryResultBlock result = statement.execute(catalog);
+
+        assertEquals(List.of(List.of("20", "ada")), result.getRows());
+        verify(table, never()).orderedRecordsFor(List.of("age"), true);
+        verify(table, never()).orderedRecordsFor(List.of("age", "name"), true);
+        verify(table).iterator();
+    }
+
     private static Identifier identifier(String name) {
         Identifier identifier = new Identifier();
         identifier.setName(name);
@@ -456,6 +583,13 @@ class AstNodeTest {
         NumericLiteral literal = new NumericLiteral();
         literal.setValue(literalValue);
         return literal;
+    }
+
+    private static OrderByItem orderBy(String columnName, boolean ascending) {
+        OrderByItem item = new OrderByItem();
+        item.setColumn(columnMention(columnName));
+        item.setAscending(ascending);
+        return item;
     }
 
     private static StringLiteral stringLiteral(String literalValue) {

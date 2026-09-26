@@ -2,7 +2,7 @@ package disk_persistence;
 
 import STRUCTURE.DBMSException;
 import STRUCTURE.Record;
-import STRUCTURE.Table;
+import STRUCTURE.table.Table;
 
 import java.util.NoSuchElementException;
 

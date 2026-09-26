@@ -1,5 +1,7 @@
 package STRUCTURE;
 
+import STRUCTURE.table.Table;
+
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -25,11 +27,11 @@ class TablePrimaryKeyTest {
                     new Column("name", "STRING")
             ));
 
-            table.addRecord(List.of(MyInt.convtoDB_DT("1"), MyString.convtoDB_DT("alice")));
+            table.addRecord(List.of(MyInt.convtoDB_DT("1"), MyString.convtoDB_DT("alice")), null);
 
             DBMSException exception = assertThrows(
                     DBMSException.class,
-                    () -> table.addRecord(List.of(MyInt.convtoDB_DT("1"), MyString.convtoDB_DT("bob")))
+                    () -> table.addRecord(List.of(MyInt.convtoDB_DT("1"), MyString.convtoDB_DT("bob")), null)
             );
 
             assertEquals("Duplicate primary key value.", exception.getMessage());
@@ -47,7 +49,7 @@ class TablePrimaryKeyTest {
 
             DBMSException exception = assertThrows(
                     DBMSException.class,
-                    () -> table.addRecord(List.of(MyString.convtoDB_DT("")))
+                    () -> table.addRecord(List.of(MyString.convtoDB_DT("")), null)
             );
 
             assertEquals("Primary key column 'id' must be non-null and non-empty.", exception.getMessage());
@@ -64,7 +66,7 @@ class TablePrimaryKeyTest {
 
             DBMSException exception = assertThrows(
                     DBMSException.class,
-                    () -> table.addRecord(Arrays.asList((DBMSDataType) null))
+                    () -> table.addRecord(Arrays.asList((DBMSDataType) null), null)
             );
 
             assertEquals("Primary key column 'id' must be non-null and non-empty.", exception.getMessage());
@@ -83,12 +85,12 @@ class TablePrimaryKeyTest {
                     new Column("name", "STRING")
             ));
 
-            table.addRecord(List.of(MyInt.convtoDB_DT("1"), MyInt.convtoDB_DT("1"), MyString.convtoDB_DT("alice")));
-            table.addRecord(List.of(MyInt.convtoDB_DT("1"), MyInt.convtoDB_DT("2"), MyString.convtoDB_DT("bob")));
+            table.addRecord(List.of(MyInt.convtoDB_DT("1"), MyInt.convtoDB_DT("1"), MyString.convtoDB_DT("alice")), null);
+            table.addRecord(List.of(MyInt.convtoDB_DT("1"), MyInt.convtoDB_DT("2"), MyString.convtoDB_DT("bob")), null);
 
             DBMSException exception = assertThrows(
                     DBMSException.class,
-                    () -> table.addRecord(List.of(MyInt.convtoDB_DT("1"), MyInt.convtoDB_DT("1"), MyString.convtoDB_DT("carol")))
+                    () -> table.addRecord(List.of(MyInt.convtoDB_DT("1"), MyInt.convtoDB_DT("1"), MyString.convtoDB_DT("carol")), null)
             );
 
             assertEquals("Duplicate primary key value.", exception.getMessage());

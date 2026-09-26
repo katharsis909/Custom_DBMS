@@ -32,7 +32,7 @@ public class PageManager {
      * Insert path: select the writable page, insert the row, flush it, and
      * return the physical page/offset reference for future index structures.
      */
-    public synchronized RowPointer insertRow(byte[] row) throws DBMSException {
+    public RowPointer insertRow(byte[] row) throws DBMSException {
         if (!currentPage.hasSpace(row.length)) {
             flushCurrentPage();
             currentPageId++;
@@ -44,22 +44,22 @@ public class PageManager {
         return new RowPointer(currentPageId, rowOffset);
     }
 
-    public synchronized Page loadPage(int pageId) throws DBMSException {
+    public Page loadPage(int pageId) throws DBMSException {
         if (currentPage != null && pageId == currentPageId) {
             return currentPage;
         }
         return loadPageFromDisk(pageId);
     }
 
-    public synchronized int getCurrentPageId() {
+    public int getCurrentPageId() {
         return currentPageId;
     }
 
-    public synchronized Page getCurrentPage() {
+    public Page getCurrentPage() {
         return currentPage;
     }
 
-    public synchronized void flushCurrentPage() throws DBMSException {
+    public void flushCurrentPage() throws DBMSException {
         File file = pageFile(currentPageId);
         try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(currentPage.getData());

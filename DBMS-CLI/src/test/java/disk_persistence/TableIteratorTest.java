@@ -1,7 +1,7 @@
 package disk_persistence;
 
 import STRUCTURE.Record;
-import STRUCTURE.Table;
+import STRUCTURE.table.Table;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 

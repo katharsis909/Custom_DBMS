@@ -4,7 +4,7 @@ import SEMANTIC.AST_NODES.LEAF_NODES.Identifier;
 import STRUCTURE.Catalog;
 import STRUCTURE.DBMSDataType;
 import STRUCTURE.DBMSException;
-import STRUCTURE.Table;
+import STRUCTURE.table.Table;
 import dbmscli.result.QueryResultBlock;
 
 import java.util.List;

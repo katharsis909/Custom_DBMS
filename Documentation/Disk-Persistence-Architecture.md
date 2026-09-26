@@ -205,9 +205,6 @@ The same limitation applies to the current ORDER BY index path: ordered scans lo
 ### GROUP BY index note
 GROUP BY currently uses hash grouping. The query code has a strategy hook where B+ tree grouping can be added later, including composite-index grouping when the GROUP BY column order matches the composite index order.
 
-### Concurrency note
-`DbmsCliEngine.execute...` is synchronized, and catalog/table mutation paths are synchronized so local concurrent calls do not interleave catalog updates, inserts, or index maintenance. This is still coarse-grained locking, not transaction isolation.
-
 ### Foreign-key integrity note
 Foreign-key grammar and metadata are supported now. `CREATE TABLE` validates that the referenced table and column exist, and `INSERT` validates that each child value exists in the referenced parent column before writing the row. Delete-time referential actions such as restrict/cascade/set-null are not implemented yet.
 

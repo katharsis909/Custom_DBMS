@@ -6,7 +6,7 @@ import STRUCTURE.DBMSException;
 import STRUCTURE.MyInt;
 import STRUCTURE.MyString;
 import STRUCTURE.Record;
-import STRUCTURE.Table;
+import STRUCTURE.table.Table;
 
 import java.util.ArrayList;
 import java.util.List;
