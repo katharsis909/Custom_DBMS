@@ -21,6 +21,7 @@ import SEMANTIC.AST_NODES.select.utility.JoinOrderPlanner;
 import SEMANTIC.AST_NODES.select.utility.RecordSortEngine;
 import SEMANTIC.AST_NODES.select.utility.ResultProjectionEngine;
 import STRUCTURE.Catalog;
+import java.util.Iterator;
 
 import STRUCTURE.DBMSException;
 import STRUCTURE.Record;
@@ -146,18 +147,35 @@ public class SelectStatement extends Statement {
         if (accessPath.useOrderIndex) {
             QUERY_PLANNER.OrderIndexMatch orderMatch = accessPathPlanner.findOrderIndexMatch(table, orderByItems, groupExecutor.isGroupedQuery(selectedColumnList, groupByColumns));
             List<String> indexedColumns = accessPathPlanner.orderByColumnNames(orderByItems).subList(0, accessPath.orderPrefixLength);
-            List<Record> orderedRecords = table.orderedRecordsFor(indexedColumns, orderMatch.scanAscending);
-            return new SingleTableRows(filterMatchingRecords(orderedRecords), orderMatch.completeCovered);
+            Iterator<Record> orderedIterator = table.orderedRecordIterator(indexedColumns, orderMatch.scanAscending);
+            if (orderedIterator == null) {
+                List<Record> records = table.orderedRecordsFor(indexedColumns, orderMatch.scanAscending);
+                if (records != null) {
+                    orderedIterator = records.iterator();
+                }
+            }
+            return new SingleTableRows(filterMatchingRecords(orderedIterator), orderMatch.completeCovered);
         }
         if (accessPath.useWhereIndex) {
-            return new SingleTableRows(filterMatchingRecords(table.indexedRecordsFor(getWhereClause())), false);
+            Iterator<Record> whereIterator = table.indexedRecordIterator(getWhereClause());
+            if (whereIterator == null || !whereIterator.hasNext()) {
+                List<Record> records = table.indexedRecordsFor(getWhereClause());
+                if (records != null && !records.isEmpty()) {
+                    whereIterator = records.iterator();
+                }
+            }
+            return new SingleTableRows(filterMatchingRecords(whereIterator), false);
         }
-        return new SingleTableRows(scanAndFilterTable(table.iterator()), false);
+        return new SingleTableRows(filterMatchingRecords(table.iterator()), false);
     }
 
-    private List<Record> filterMatchingRecords(List<Record> candidateRecords) throws DBMSException {
+    private List<Record> filterMatchingRecords(Iterator<Record> iterator) throws DBMSException {
         List<Record> filteredRecords = new ArrayList<>();
-        for (Record record : candidateRecords) {
+        if (iterator == null) {
+            return filteredRecords;
+        }
+        while (iterator.hasNext()) {
+            Record record = iterator.next();
             if (matchesWhere(record)) {
                 filteredRecords.add(record);
             }
@@ -165,8 +183,11 @@ public class SelectStatement extends Statement {
         return filteredRecords;
     }
 
-    private List<Record> scanAndFilterTable(TableIterator iterator) throws DBMSException {
+    private List<Record> filterMatchingRecords(disk_persistence.TableIterator iterator) throws DBMSException {
         List<Record> filteredRecords = new ArrayList<>();
+        if (iterator == null) {
+            return filteredRecords;
+        }
         while (iterator.hasNext()) {
             Record record = iterator.next();
             if (matchesWhere(record)) {

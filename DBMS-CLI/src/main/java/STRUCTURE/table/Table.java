@@ -19,6 +19,8 @@ import disk_persistence.TableIterator;
 import indexing.bplustree.BPlusTreeDiskStore;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 public class Table {
@@ -94,12 +96,19 @@ public class Table {
         indexManager.createIndex(indexName, columnNames, columnDirections, schema, this);
     }
 
-    public List<Record> indexedRecordsFor(WhereClause whereClause) throws DBMSException {
-        IndexedAccess access = planner.bestIndexedAccess(whereClause);
-        if (access == null) {
-            return null;
+    public Iterator<Record> indexedRecordIterator(WhereClause whereClause) throws DBMSException {
+        List<Record> records = indexedRecordsFor(whereClause);
+        if (records == null) {
+            return Collections.emptyIterator();
         }
+        return records.iterator();
+    }
 
+    public List<Record> indexedRecordsFor(WhereClause whereClause) throws DBMSException {
+        IndexedAccess access = planner == null ? null : planner.bestIndexedAccess(whereClause);
+        if (access == null) {
+            return List.of();
+        }
         BPlusTreeDiskStore<String, RowPointer> store = access.index.primaryKey
                 ? indexManager.getPrimaryKeyIndex()
                 : indexManager.createIndexStore(access.index.indexName);
@@ -125,8 +134,16 @@ public class Table {
         return planner.findBestOrderIndexMatch(orderByItems);
     }
 
+    public Iterator<Record> orderedRecordIterator(List<String> columnNames, boolean ascending) throws DBMSException {
+        List<Record> records = orderedRecordsFor(columnNames, ascending);
+        if (records == null) {
+            return null;
+        }
+        return records.iterator();
+    }
+
     public List<Record> orderedRecordsFor(List<String> columnNames, boolean ascending) throws DBMSException {
-        BPlusTreeDiskStore<String, RowPointer> store = indexManager.indexStoreForLeadingColumns(columnNames, schema.getPrimaryKeyColumns());
+        BPlusTreeDiskStore<String, RowPointer> store = indexManager == null ? null : indexManager.indexStoreForLeadingColumns(columnNames, schema.getPrimaryKeyColumns());
         if (store == null) {
             return null;
         }

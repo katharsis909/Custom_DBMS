@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -73,17 +75,25 @@ public class BPlusTreeDiskStore<K extends Comparable<K>, V> {
     }
 
     public List<V> searchRange(K fromInclusive, K toInclusive) throws DBMSException {
+        return searchRangeIterator(fromInclusive, toInclusive) == null ? List.of() : iteratorToList(searchRangeIterator(fromInclusive, toInclusive));
+    }
+
+    public Iterator<V> searchRangeIterator(K fromInclusive, K toInclusive) throws DBMSException {
         if (fromInclusive.compareTo(toInclusive) > 0) {
-            return List.of();
+            return Collections.emptyIterator();
         }
         List<V> values = new ArrayList<>();
         for (Map.Entry<K, V> entry : load().searchRange(fromInclusive, toInclusive)) {
             values.add(entry.getValue());
         }
-        return values;
+        return values.iterator();
     }
 
     public List<V> valuesInOrder(boolean ascending) throws DBMSException {
+        return iteratorToList(valuesInOrderIterator(ascending));
+    }
+
+    public Iterator<V> valuesInOrderIterator(boolean ascending) throws DBMSException {
         List<V> values = new ArrayList<>();
         List<Map.Entry<K, V>> entries = load().entriesInOrder();
         if (!ascending) {
@@ -93,7 +103,15 @@ public class BPlusTreeDiskStore<K extends Comparable<K>, V> {
         for (Map.Entry<K, V> entry : entries) {
             values.add(entry.getValue());
         }
-        return values;
+        return values.iterator();
+    }
+
+    private <T> List<T> iteratorToList(Iterator<T> iterator) {
+        List<T> list = new ArrayList<>();
+        while (iterator.hasNext()) {
+            list.add(iterator.next());
+        }
+        return list;
     }
 
     public void insert(K key, V value) throws DBMSException {
