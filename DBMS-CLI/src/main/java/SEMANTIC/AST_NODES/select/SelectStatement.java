@@ -22,6 +22,7 @@ import SEMANTIC.AST_NODES.select.utility.RecordSortEngine;
 import SEMANTIC.AST_NODES.select.utility.ResultProjectionEngine;
 import STRUCTURE.Catalog;
 import java.util.Iterator;
+import java.util.Set;
 
 import STRUCTURE.DBMSException;
 import STRUCTURE.Record;
@@ -198,25 +199,43 @@ public class SelectStatement extends Statement {
     }
 
     private QueryResultBlock executeJoin(Catalog catalog, Table baseTable) throws DBMSException {
-        List<TableBinding> bindings = joinPlanner.buildOptimizedJoinOrder(catalog, tableName, tableAlias, baseTable, joins);
-        List<Record> combinedRecords = new ArrayList<>();
-        joinExecutor.buildJoinedRecords(bindings, 0, new Record(), combinedRecords);
-
-        List<List<String>> rows = new ArrayList<>();
-        List<Record> filteredRecords = new ArrayList<>();
-        for (Record record : combinedRecords) {
-            if (joinExecutor.joinsMatch(record, joins) && matchesWhere(record)) {
-                filteredRecords.add(record);
-            }
-        }
+        List<TableBinding> bindings = joinPlanner.buildOptimizedJoinOrder(catalog, tableName, tableAlias, baseTable, joins, whereClause, orderByItems);
+        Iterator<Record> joinedIterator = joinExecutor.joinedRecordIterator(bindings, joins, whereClause);
 
         if (groupExecutor.isGroupedQuery(selectedColumnList, groupByColumns)) {
+            List<Record> filteredRecords = new ArrayList<>();
+            while (joinedIterator.hasNext()) {
+                filteredRecords.add(joinedIterator.next());
+            }
             return groupExecutor.executeGrouped(filteredRecords, selectedColumnList, groupByColumns, havingConditions, orderByItems, sortEngine);
         }
 
-        sortEngine.sortRecordsIfNeeded(filteredRecords, orderByItems);
-        for (Record record : filteredRecords) {
-            joinExecutor.addJoinedSelectedRow(bindings, rows, record, selectedColumnList, projectionEngine);
+        Set<String> qualifiedOrderTables = joinPlanner.qualifiedOrderByTables(orderByItems);
+        TableBinding leadingBinding = bindings.get(0);
+        boolean leadingTableQualified = qualifiedOrderTables.contains(leadingBinding.alias) || qualifiedOrderTables.contains(leadingBinding.tableName);
+
+        int usableOrderPrefix = 0;
+        if (leadingTableQualified && orderByItems != null && !orderByItems.isEmpty()) {
+            usableOrderPrefix = accessPathPlanner.usableOrderIndexPrefixLength(leadingBinding.table, orderByItems, false);
+        }
+
+        Iterator<Record> finalRecordIterator = joinedIterator;
+        if (usableOrderPrefix > 0 && usableOrderPrefix < orderByItems.size()) {
+            finalRecordIterator = new SEMANTIC.AST_NODES.select.utility.SubGroupSortIterator(
+                    joinedIterator, orderByItems, usableOrderPrefix, sortEngine
+            );
+        } else if (usableOrderPrefix == 0 && orderByItems != null && !orderByItems.isEmpty()) {
+            List<Record> allRecords = new ArrayList<>();
+            while (joinedIterator.hasNext()) {
+                allRecords.add(joinedIterator.next());
+            }
+            sortEngine.sortRecordsIfNeeded(allRecords, orderByItems);
+            finalRecordIterator = allRecords.iterator();
+        }
+
+        List<List<String>> rows = new ArrayList<>();
+        while (finalRecordIterator.hasNext()) {
+            joinExecutor.addJoinedSelectedRow(bindings, rows, finalRecordIterator.next(), selectedColumnList, projectionEngine);
         }
 
         return QueryResultBlock.table(joinExecutor.buildJoinHeaders(bindings, selectedColumnList), rows);

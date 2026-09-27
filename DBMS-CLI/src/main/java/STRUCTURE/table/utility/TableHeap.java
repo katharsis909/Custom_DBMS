@@ -11,6 +11,7 @@ import disk_persistence.TableIterator;
 public class TableHeap {
     private final String tableName;
     private final PageManager pageManager;
+    private int approximateRowCount = -1;
 
     public TableHeap(String tableName) throws DBMSException {
         this.tableName = tableName;
@@ -18,6 +19,9 @@ public class TableHeap {
     }
 
     public RowPointer insertRow(byte[] rowBytes) throws DBMSException {
+        if (approximateRowCount >= 0) {
+            approximateRowCount++;
+        }
         return pageManager.insertRow(rowBytes);
     }
 
@@ -37,6 +41,14 @@ public class TableHeap {
             tableIterator.next();
             rowCount++;
         }
+        approximateRowCount = rowCount;
         return rowCount;
+    }
+
+    public int getApproximateRowCount(Table table) throws DBMSException {
+        if (approximateRowCount < 0) {
+            getRowCount(table);
+        }
+        return approximateRowCount;
     }
 }

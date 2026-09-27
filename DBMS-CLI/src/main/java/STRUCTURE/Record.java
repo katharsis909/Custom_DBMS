@@ -15,7 +15,7 @@ public class Record
         this.data = new HashMap<>();
     }
 
-    boolean containsColumn(String colName)
+    public boolean containsColumn(String colName)
     {
         return data.containsKey(colName);
     }

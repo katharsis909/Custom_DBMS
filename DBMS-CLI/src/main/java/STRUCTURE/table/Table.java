@@ -178,6 +178,10 @@ public class Table {
         return planner.hasIndexOnColumn(columnName);
     }
 
+    public BPlusTreeDiskStore<String, RowPointer> getIndexStoreForColumn(String columnName) {
+        return indexManager == null ? null : indexManager.indexStoreForLeadingColumns(List.of(columnName), schema.getPrimaryKeyColumns());
+    }
+
     public boolean hasIndexStartingWithColumns(List<String> columnNames) {
         return planner.hasIndexStartingWithColumns(columnNames);
     }
@@ -188,5 +192,9 @@ public class Table {
 
     public int getRowCount() throws DBMSException {
         return heap.getRowCount(this);
+    }
+
+    public int getApproximateRowCount() throws DBMSException {
+        return heap == null ? 0 : heap.getApproximateRowCount(this);
     }
 }

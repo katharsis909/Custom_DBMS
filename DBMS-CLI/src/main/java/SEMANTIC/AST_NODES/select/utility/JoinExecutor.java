@@ -11,10 +11,20 @@ import STRUCTURE.Record;
 import disk_persistence.TableIterator;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import SEMANTIC.AST_NODES.WhereClause;
 
 public class JoinExecutor {
+
+    public Iterator<Record> joinedRecordIterator(
+            List<TableBinding> bindings,
+            List<JoinClause> joins,
+            WhereClause whereClause
+    ) {
+        return new JoinedRecordIterator(bindings, joins, whereClause);
+    }
 
     public void buildJoinedRecords(
             List<TableBinding> bindings,
